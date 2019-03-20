@@ -13,7 +13,10 @@ VALUES ('CAD', 'Canadian Dollar'),
 
 -- from_rate * from_amount = to_amount
 INSERT INTO exchangerates(from_currency, to_currency, date, rate)
-VALUES ('CAD', 'USD', '2019-03-13 04:03', 0.75126),
+VALUES ('CAD', 'CAD', '1000-01-01 00:00:00', 1.0),
+       ('USD', 'USD', '1000-01-01 00:00:00', 1.0),
+       ('EUR', 'EUR', '1000-01-01 00:00:00', 1.0),
+       ('CAD', 'USD', '2019-03-13 04:03', 0.75126),
        ('CAD', 'EUR', '2019-03-13 04:02', 0.66356),
        ('USD', 'CAD', '2019-03-13 04:04', 1.33114),
        ('USD', 'EUR', '2019-03-13 04:04', 0.88323),
@@ -30,7 +33,7 @@ VALUES ('Roxane Weavers', '78976 Almo Drive, North Bay Ontario P1A T7N', 'rweave
 INSERT INTO accounts (customer_id, account_no, type, currency, initial_balance)
 VALUES (1, 1, 'checking', 'CAD', 523.21),
        (1, 2, 'savings', 'USD', 2934.12),
-       (2, 1, 'checking', 'CAD', 10.32),
+       (2, 1, 'checking', 'EUR', 10.32),
        (3, 1, 'savings', 'CAD', 14235.00),
        (4, 1, 'savings', 'CAD', 18900.32),
        (4, 2, 'savings', 'EUR', 25002.88),
@@ -38,8 +41,8 @@ VALUES (1, 1, 'checking', 'CAD', 523.21),
        (5, 2, 'checking', 'EUR', 521.01);
 
 INSERT INTO transfers (sender_id, sender_account, receiver_id, receiver_account, amount, currency, date, reference)
-VALUES (1, 1, 3, 1, 200, 'CAD', '2019-03-18 19:30:12', NULL),
-       (2, 1, 4, 2, 2.57, 'CAD', '2019-01-05 02:52:18', 'Movie Theatre Tickets'),
-       (5, 2, 5, 1, 300.97, 'EUR', '2019-04-01 09:38:31', NULL),
-       (4, 1, 1, 2, 1500.00, 'CAD', '2019-03-30 12:23:52', 'Birthday Gift'),
+VALUES (1, 1, 3, 1, 200, 'CAD', '2019-03-18 19:30:12', ''),
+       (2, 1, 4, 1, 2.57, 'EUR', '2019-04-05 02:52:18', 'Movie Theatre Tickets'),
+       (5, 2, 5, 1, 300.97, 'EUR', '2019-04-01 09:38:31', ''),
+       (4, 1, 1, 2, 1500.00, 'EUR', '2019-03-30 12:23:52', 'Birthday Gift'),
        (4, 1, 5, 1, 1281.34, 'CAD', '2019-04-01 00:00:00', 'Rent');

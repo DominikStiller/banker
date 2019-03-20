@@ -39,7 +39,7 @@ public class Customer {
     }
 
     public String getAddress() {
-        return address.orElse("NULL");
+        return address.orElse("");
     }
 
     public void setAddress(String address) {
@@ -47,7 +47,7 @@ public class Customer {
     }
 
     public String getEmail() {
-        return email.orElse("NULL");
+        return email.orElse("");
     }
 
     public void setEmail(String email) {
@@ -55,19 +55,10 @@ public class Customer {
     }
 
     public String getPhone() {
-        return phone.orElse("NULL");
+        return phone.orElse("");
     }
 
     public void setPhone(String phone) {
         this.phone = Optional.ofNullable(phone);
-    }
-
-    @Override
-    public String toString() {
-        return getName() + ": " +
-                "address = " + getAddress() + ", " +
-                "email = " + getEmail() + ", " +
-                "phone = " + getPhone();
-
     }
 }

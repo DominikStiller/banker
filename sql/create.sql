@@ -39,9 +39,9 @@ CREATE TABLE Accounts
 (
 	customer_id int,
 	account_no int,
-	type ENUM('checking', 'savings'),
-	currency char(3),
-	initial_balance decimal(10, 2),
+	type ENUM('checking', 'savings') NOT NULL,
+	currency char(3) NOT NULL,
+	initial_balance decimal(10, 2) NOT NULL,
 	PRIMARY KEY (customer_id, account_no),
 	FOREIGN KEY (customer_id)
 	   REFERENCES Customers(id)
@@ -53,14 +53,14 @@ CREATE TABLE Accounts
 CREATE TABLE Transfers
 (
    id int AUTO_INCREMENT,
-   sender_id int,
-   sender_account int,
-   receiver_id int,
-   receiver_account int,
-   amount decimal(10, 2),
-   currency char(3),
-   date DATETIME,
-   reference varchar(100),
+   sender_id int NOT NULL,
+   sender_account int NOT NULL,
+   receiver_id int NOT NULL,
+   receiver_account int NOT NULL,
+   amount decimal(10, 2) NOT NULL,
+   currency char(3) NOT NULL,
+   date DATETIME NOT NULL,
+   reference varchar(100) DEFAULT '',
    PRIMARY KEY (id),
 	FOREIGN KEY (sender_id)
 		REFERENCES Customers(id),
@@ -73,5 +73,3 @@ CREATE TABLE Transfers
 	FOREIGN KEY (currency)
 		REFERENCES Currencies(code)
 );
-
--- TODO View for accounts with current balance
