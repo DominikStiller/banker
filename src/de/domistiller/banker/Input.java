@@ -4,23 +4,35 @@ import de.domistiller.banker.model.Account;
 import de.domistiller.banker.model.Customer;
 
 import java.util.Scanner;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
+/**
+ * Handles all input
+ */
 public class Input {
 
     public enum MenuItem {
-        EXIT,
-        LIST_CUSTOMERS,
-        CREATE_CUSTOMER,
-        DELETE_CUSTOMER,
-        LIST_ACCOUNTS,
-        LIST_TRANSFERS
+        EXIT("Exit"),
+        LIST_CUSTOMERS("List customers"),
+        CREATE_CUSTOMER("Create customer"),
+        DELETE_CUSTOMER("Delete customer"),
+        LIST_ACCOUNTS("List accounts of customer"),
+        CREATE_ACCOUNT("Create account"),
+        DELETE_ACCOUNT("Delete account"),
+        SHOW_BANK_STATEMENT("Show bank statement"),
+        MAKE_TRANSFER("Make wire transfer");
+
+        private String description;
+
+        MenuItem(String description) {
+            this.description = description;
+        }
     }
 
+    private Database db;
     private Scanner in;
 
-    Input() {
+    Input(Database db) {
+        this.db = db;
         in = new Scanner(System.in);
     }
 
@@ -30,28 +42,30 @@ public class Input {
         do {
             System.out.println();
             System.out.println();
-            System.out.println("Menu Choices:");
-            System.out.println("1. List customers");
-            System.out.println("2. Create customer");
-            System.out.println("3. Delete customer");
-            System.out.println("4. List accounts");
-            System.out.println("5. List transfers");
+            System.out.println("MENU:");
+
+            for (int i = 1; i < MenuItem.values().length; i++) {
+                System.out.printf("%d. %-28s", i, MenuItem.values()[i].description);
+                if (i % 3 == 0) {
+                    System.out.println();
+                }
+            }
             System.out.println("0. Exit");
             System.out.println();
             System.out.print("Choice: ");
 
             choice = in.nextInt();
-            if (!valdiateMenuChoice(choice)) {
+            if (!validateMenuChoice(choice)) {
                 System.out.println("Invalid menu choice");
             }
-        } while(!valdiateMenuChoice(choice));
+        } while(!validateMenuChoice(choice));
         System.out.println();
         System.out.println();
 
         return MenuItem.values()[choice];
     }
 
-    private boolean valdiateMenuChoice(int choice) {
+    private boolean validateMenuChoice(int choice) {
         return choice >= 0 && choice < MenuItem.values().length;
     }
 
@@ -73,36 +87,69 @@ public class Input {
         return c;
     }
 
-    int getCustomerId(Runnable listCustomers) {
+    int getCustomerId() {
         System.out.println();
-        listCustomers.run();
+        listCustomers();
         System.out.println();
+
         System.out.print("Customer ID: ");
-        var id = in.nextInt();
-        System.out.println();
-        return id;
+        return in.nextInt();
     }
 
-    Account.Reference getAccountRef(Runnable listCustomers, Predicate<Integer> listAccounts) {
-        System.out.println();
-        listCustomers.run();
-        System.out.println();
-        System.out.print("Customer ID: ");
-        var customer = in.nextInt();
+    Account getNewAccount() {
+        var ref = getAccountRef();
 
-        System.out.println();
-        var customerExists = listAccounts.test(customer);
+        System.out.print("Type (checking/savings): ");
+        var type = Account.Type.fromString(in.next());
 
-        if (!customerExists) {
+        System.out.print("Currency (CAD/USD/EUR): ");
+        var currency = in.next();
+
+        System.out.print("Initial Balance in " + currency + ": ");
+        var initialBalance = in.nextDouble();
+
+        return new Account(ref.getCustomerId(), ref.getAccountNumber(), type, currency, initialBalance);
+    }
+
+    Account.Reference getAccountRef() {
+        var customerId = getCustomerId();
+
+        var customer = db.getCustomer(customerId);
+        if (customer == null) {
             System.out.println("Customer not found");
             return null;
         }
+        System.out.println();
+
+        listAccounts(customer);
 
         System.out.println();
         System.out.print("Account Number: ");
         var accountNo = in.nextInt();
-        System.out.println();
 
-        return new Account.Reference(customer, accountNo);
+        return new Account.Reference(customerId, accountNo);
+    }
+
+    /*
+     * Helper methods
+     */
+    private void listCustomers() {
+        System.out.println("CUSTOMERS:");
+        System.out.println("ID   NAME");
+        for (Customer c : db.getCustomers()) {
+            System.out.printf("%-2d   %s\n", c.getId(), c.getName());
+        }
+    }
+
+    private void listAccounts(Customer customer) {
+        System.out.println("ACCOUNTS FOR CUSTOMER " + customer.getName());
+        System.out.println("NO.   TYPE        CURRENCY");
+        for (Account a : db.getAccounts(customer.getId())) {
+            System.out.printf("%-3d   %-9s   %s\n",
+                    a.getRef().getAccountNumber(),
+                    a.getType(),
+                    a.getInitialBalance().getCurrency()
+            );
+        }
     }
 }

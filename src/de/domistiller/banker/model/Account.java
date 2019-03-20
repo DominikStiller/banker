@@ -46,7 +46,7 @@ public class Account {
         SAVINGS,
         CHECKING;
 
-        public static Type fromDB(String type) {
+        public static Type fromString(String type) {
             switch (type) {
                 case "savings":
                     return SAVINGS;

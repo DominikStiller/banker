@@ -5,26 +5,35 @@ import de.domistiller.banker.model.Amount;
 import de.domistiller.banker.model.Customer;
 import de.domistiller.banker.model.Transfer;
 
-import javax.xml.transform.Result;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Handles all database interaction
+ * Contains read and write queries
+ */
 public class Database implements AutoCloseable {
 
     private final static Logger log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
     private Connection conn;
+
     private PreparedStatement getCustomer;
     private PreparedStatement getCustomers;
     private PreparedStatement createCustomer;
     private PreparedStatement deleteCustomer;
+
     private PreparedStatement getAccount;
     private PreparedStatement getAccounts;
     private PreparedStatement getAccountBalance;
+    private PreparedStatement createAccount;
+    private PreparedStatement deleteAccount;
+
     private PreparedStatement getTransfers;
+    private PreparedStatement makeTransfer;
 
     public Database(String server, String user, String password) {
         try {
@@ -50,6 +59,7 @@ public class Database implements AutoCloseable {
         createCustomer = conn.prepareStatement(
                 "INSERT INTO customers (name, address, email, phone) VALUES (?, ?, ?, ?)");
         deleteCustomer = conn.prepareStatement("DELETE FROM customers WHERE id = ?");
+
         getAccount = conn.prepareStatement(
                 "SELECT *\n" +
                 "FROM accounts\n" +
@@ -90,6 +100,11 @@ public class Database implements AutoCloseable {
                     "WHERE customer_id = ?\n" +
                     "AND account_no = ?"
         );
+        createAccount = conn.prepareStatement(
+                "INSERT INTO accounts (customer_id, account_no, type, currency, initial_balance) \n" +
+                "VALUES (?, ?, ?, ?, ?)");
+        deleteAccount = conn.prepareStatement("DELETE FROM accounts where customer_id = ? AND account_no = ?");
+
         getTransfers = conn.prepareStatement(
                 "SELECT *\n" +
                     "FROM transfers\n" +
@@ -97,6 +112,7 @@ public class Database implements AutoCloseable {
                     "OR (receiver_id = ? AND receiver_account = ?)\n" +
                     "ORDER BY date ASC"
         );
+        // TODO makeTransfer
     }
 
     Customer getCustomer(int id) {
@@ -197,7 +213,7 @@ public class Database implements AutoCloseable {
         return new Account(
                 rs.getInt(1),
                 rs.getInt(2),
-                Account.Type.fromDB(rs.getString(3)),
+                Account.Type.fromString(rs.getString(3)),
                 rs.getString(4),
                 rs.getDouble(5));
     }
@@ -225,6 +241,35 @@ public class Database implements AutoCloseable {
         }
         return null;
     }
+
+    boolean createAccount(Account a) {
+        try {
+            createAccount.setInt(1, a.getRef().getCustomerId());
+            createAccount.setInt(2, a.getRef().getAccountNumber());
+            createAccount.setString(3, a.getType().name().toLowerCase());
+            createAccount.setString(4, a.getInitialBalance().getCurrency());
+            createAccount.setDouble(5, a.getInitialBalance().getAmount());
+
+            var result = createAccount.executeUpdate();
+            return result == 1;
+        } catch (SQLException e) {
+            log.log(Level.SEVERE, "error creating account", e);
+            return false;
+        }
+    }
+
+    boolean deleteAccount(Account.Reference a) {
+        try {
+            deleteAccount.setInt(1, a.getCustomerId());
+            deleteAccount.setInt(2, a.getAccountNumber());
+            var result = deleteAccount.executeUpdate();
+            return result == 1;
+        } catch (SQLException e) {
+            log.log(Level.SEVERE, "error deleting account", e);
+            return false;
+        }
+    }
+
 
     List<Transfer> getTransfers(Account.Reference ref) {
         var list = new ArrayList<Transfer>();
@@ -259,10 +304,15 @@ public class Database implements AutoCloseable {
             getCustomers.close();
             createCustomer.close();
             deleteCustomer.close();
+
             getAccount.close();
             getAccounts.close();
             getAccountBalance.close();
+            createAccount.close();
+            deleteAccount.close();
+
             getTransfers.close();
+            makeTransfer.close();
 
             conn.close();
         } catch (SQLException e) {

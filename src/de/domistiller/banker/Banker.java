@@ -1,6 +1,3 @@
-/**
- * TODO Add description to all classes
- */
 package de.domistiller.banker;
 
 import de.domistiller.banker.model.Account;
@@ -10,6 +7,9 @@ import de.domistiller.banker.model.Transfer;
 import java.util.Properties;
 import java.util.logging.Logger;
 
+/**
+ * Contains main loop and top-level functionality
+ */
 public class Banker {
 
     private final static Logger log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
@@ -26,7 +26,7 @@ public class Banker {
                 settings.getProperty("dbserver"),
                 settings.getProperty("dbuser"),
                 settings.getProperty("dbpassword"));
-        input = new Input();
+        input = new Input(db);
     }
 
     public void start() {
@@ -53,14 +53,27 @@ public class Banker {
                     System.out.println("LIST ACCOUNTS:");
                     listAccounts();
                     break;
-                case LIST_TRANSFERS:
-                    System.out.println("LIST TRANSFERS:");
-                    listTransfers();
+                case CREATE_ACCOUNT:
+                    System.out.println("CREATE NEW ACCOUNT:");
+                    createAccount();
+                    break;
+                case DELETE_ACCOUNT:
+                    System.out.println("DELETE ACCOUNT:");
+                    deleteAccount();
+                    break;
+                case SHOW_BANK_STATEMENT:
+                    System.out.println("BANK STATEMENT:");
+                    showBankStatement();
+                    break;
+                case MAKE_TRANSFER:
+                    System.out.println("MAKE WIRE TRANSFER:");
+                    makeTransfer();
                     break;
                 case EXIT:
                     System.out.println("Goodbye from Banker!");
             }
             System.out.println("\n\n");
+            printSeparator('#');
         } while(choice != Input.MenuItem.EXIT);
     }
 
@@ -82,6 +95,7 @@ public class Banker {
 
     private void createCustomer() {
         var c = input.getNewCustomer();
+
         var success = db.createCustomer(c);
         if (success) {
             System.out.println("Successfully created customer " + c.getName());
@@ -91,31 +105,39 @@ public class Banker {
     }
 
     private void deleteCustomer() {
-        var id = input.getCustomerId(this::listCustomersSimple);
+        var id = input.getCustomerId();
+        System.out.println();
+
+        var customer = db.getCustomer(id);
+        if (customer == null) {
+            System.out.println("Customer not found");
+        }
+
         var success = db.deleteCustomer(id);
         if (success) {
-            System.out.println("Successfully deleted customer with ID " + id);
+            System.out.println("Successfully deleted customer " + customer.getName() + " (ID " + customer.getId());
         } else {
-            System.out.println("Could not delete customer with ID " + id);
+            System.out.println("Could not delete customer " + customer.getName() + " (ID " + customer.getId());
         }
     }
 
     private void listAccounts() {
-        var id = input.getCustomerId(this::listCustomersSimple);
-        var customer = db.getCustomer(id);
+        var id = input.getCustomerId();
+        System.out.println();
 
+        var customer = db.getCustomer(id);
         if (customer == null) {
             System.out.println("Customer not found");
             return;
         }
 
-        System.out.println("ACCOUNTS FOR CUSTOMER " + customer.getName() + "(ID " + customer.getId() + ")\n");
-        System.out.println("---------------------------------------------------------------------------------");
+        System.out.println("ACCOUNTS FOR CUSTOMER " + customer.getName() + " (ID " + customer.getId() + ")\n");
+        printSeparator();
         System.out.println("ACCOUNT NO.     TYPE           INITIAL BALANCE      CURRENT BALANCE");
-        System.out.println("---------------------------------------------------------------------------------");
+        printSeparator();
         for (Account a : db.getAccounts(id)) {
             System.out.printf(
-                    "%-11s     %-20s     %-15s      %-15s\n",
+                    "%-11s     %-10s     %-15s      %-15s\n",
                     a.getRef(),
                     a.getType(),
                     a.getInitialBalance(),
@@ -124,12 +146,40 @@ public class Banker {
         }
     }
 
-    private void listTransfers() {
-        var ref = input.getAccountRef(this::listCustomersSimple, this::listAccountsSimple);
+    private void createAccount() {
+        var a = input.getNewAccount();
+
+        if (a == null) {
+            return;
+        }
+
+        var success = db.createAccount(a);
+        if (success) {
+            System.out.println("Successfully created account " + a.getRef());
+        } else {
+            System.out.println("Could not create account");
+        }
+    }
+
+    private void deleteAccount() {
+        var ref = input.getAccountRef();
+        System.out.println();
+
+        var success = db.deleteAccount(ref);
+        if (success) {
+            System.out.println("Successfully deleted account " + ref);
+        } else {
+            System.out.println("Could not delete account " + ref);
+        }
+    }
+
+    private void showBankStatement() {
+        var ref = input.getAccountRef();
 
         if (ref == null) {
             return;
         }
+        System.out.println();
 
         var account = db.getAccount(ref);
 
@@ -142,9 +192,9 @@ public class Banker {
         var totalBalance = db.getAccountBalance(ref);
 
         System.out.println("TRANSFERS FOR ACCOUNT " + account.getRef());
-        System.out.println("---------------------------------------------------------------------------------");
+        printSeparator();
         System.out.println("DATE     TIME       AMOUNT             SENDER    RECEIVER    REFERENCE");
-        System.out.println("---------------------------------------------------------------------------------");
+        printSeparator();
         for (Transfer t : db.getTransfers(ref)) {
             System.out.printf(
                     "%tD %tR     %s %9.2f %s     %-7s   %-7s     %-100s\n",
@@ -158,44 +208,31 @@ public class Banker {
                     t.getReference()
             );
         }
-        System.out.println("---------------------------------------------------------------------------------");
+        printSeparator();
         System.out.printf("INITIAL BALANCE:   %s %9.2f %s\n",
                 initialBalance.getAmount() >= 0 ? "+" : "-",
                 initialBalance.toAbsolute().getAmount(),
                 initialBalance.getCurrency());
-        System.out.println("---------------------------------------------------------------------------------");
+        printSeparator();
         System.out.printf("TOTAL BALANCE:     %s %9.2f %s\n\n",
                 totalBalance.getAmount() >= 0 ? "+" : "-",
                 totalBalance.toAbsolute().getAmount(),
                 totalBalance.getCurrency());
     }
 
-    // For passing to input class
-    private void listCustomersSimple() {
-        System.out.println("CUSTOMERS:");
-        System.out.println("ID   NAME");
-        for (Customer c : db.getCustomers()) {
-            System.out.printf("%-2d   %s\n", c.getId(), c.getName());
-        }
+    private void makeTransfer() {
+
     }
 
-    private boolean listAccountsSimple(int customerId) {
-        var customer = db.getCustomer(customerId);
+    private void printSeparator() {
+        printSeparator('-');
+    }
 
-        if (customer == null) {
-            return false;
+    private void printSeparator(char character) {
+        var s = new StringBuilder();
+        for (int i = 0; i < 115; i++) {
+            s.append(character);
         }
-
-        System.out.println("ACCOUNTS FOR CUSTOMER " + customer.getName());
-        System.out.println("NO.   TYPE        CURRENCY");
-        for (Account a : db.getAccounts(customerId)) {
-            System.out.printf("%-3d   %-9s   %s\n",
-                    a.getRef().getAccountNumber(),
-                    a.getType(),
-                    a.getInitialBalance().getCurrency()
-            );
-        }
-
-        return true;
+        System.out.println(s);
     }
 }

@@ -1,3 +1,7 @@
+/**
+ * Launch code which starts actual program
+ */
+
 package de.domistiller.banker;
 
 import java.io.*;
