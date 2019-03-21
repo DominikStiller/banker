@@ -9,6 +9,7 @@ public class Customer {
     private Optional<String> address;
     private Optional<String> email;
     private Optional<String> phone;
+    private Optional<Integer> numAcounts;
 
     public Customer(String name) {
         this.id = 0;
@@ -18,12 +19,13 @@ public class Customer {
         this.phone = Optional.empty();
     }
 
-    public Customer(int id, String name, String address, String email, String phone) {
+    public Customer(int id, String name, String address, String email, String phone, int numAccounts) {
         this.id = id;
         this.name = name;
         this.address = Optional.ofNullable(address);
         this.email = Optional.ofNullable(email);
         this.phone = Optional.ofNullable(phone);
+        this.numAcounts = Optional.of(numAccounts);
     }
 
     public int getId() {
@@ -60,5 +62,9 @@ public class Customer {
 
     public void setPhone(String phone) {
         this.phone = Optional.ofNullable(phone);
+    }
+
+    public int getNumAcounts() {
+        return numAcounts.orElse(0);
     }
 }

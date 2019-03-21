@@ -1,7 +1,9 @@
 package de.domistiller.banker;
 
 import de.domistiller.banker.model.Account;
+import de.domistiller.banker.model.Amount;
 import de.domistiller.banker.model.Customer;
+import de.domistiller.banker.model.Transfer;
 
 import java.util.Scanner;
 
@@ -70,6 +72,7 @@ public class Input {
     }
 
     Customer getNewCustomer() {
+        clearLine();
         System.out.print("Name: ");
         var c = new Customer(in.nextLine());
 
@@ -93,11 +96,21 @@ public class Input {
         System.out.println();
 
         System.out.print("Customer ID: ");
-        return in.nextInt();
+        var id = in.nextInt();
+        var c = db.getCustomer(id);
+        if (c == null) {
+            System.out.println("Customer not found");
+            return 0;
+        }
+
+        return id;
     }
 
     Account getNewAccount() {
         var ref = getAccountRef();
+        if (ref == null) {
+            return null;
+        }
 
         System.out.print("Type (checking/savings): ");
         var type = Account.Type.fromString(in.next());
@@ -113,12 +126,11 @@ public class Input {
 
     Account.Reference getAccountRef() {
         var customerId = getCustomerId();
-
-        var customer = db.getCustomer(customerId);
-        if (customer == null) {
-            System.out.println("Customer not found");
+        if (customerId == 0) {
             return null;
         }
+
+        var customer = db.getCustomer(customerId);
         System.out.println();
 
         listAccounts(customer);
@@ -128,6 +140,44 @@ public class Input {
         var accountNo = in.nextInt();
 
         return new Account.Reference(customerId, accountNo);
+    }
+
+    Transfer getNewTransfer() {
+        System.out.println("Sender:");
+        var sender = getAccountRef();
+        if (sender == null) {
+            return null;
+        }
+        if (db.getAccount(sender) == null) {
+            System.out.println("Account not found");
+            return null;
+        }
+
+        System.out.println("Receiver:");
+        var receiver = getAccountRef();
+        if (receiver == null) {
+            return null;
+        }
+        if (db.getAccount(receiver) == null) {
+            System.out.println("Account not found");
+            return null;
+        }
+
+        System.out.print("Amount: ");
+        var amount = in.nextDouble();
+
+        System.out.print("Currency (CAD/USD/EUR): ");
+        var currency = in.next();
+
+        clearLine();
+        System.out.print("Reference: ");
+        var reference = in.nextLine();
+
+        return new Transfer(sender, receiver, new Amount(amount, currency), reference);
+    }
+
+    void clearLine() {
+        in.nextLine();
     }
 
     /*

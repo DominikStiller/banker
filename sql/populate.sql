@@ -12,7 +12,7 @@ VALUES ('CAD', 'Canadian Dollar'),
        ('EUR', 'Euro');
 
 -- from_rate * from_amount = to_amount
-INSERT INTO exchangerates(from_currency, to_currency, date, rate)
+INSERT INTO exchangerates(from_currency, to_currency, executionDate, rate)
 VALUES ('CAD', 'CAD', '1000-01-01 00:00:00', 1.0),
        ('USD', 'USD', '1000-01-01 00:00:00', 1.0),
        ('EUR', 'EUR', '1000-01-01 00:00:00', 1.0),
@@ -40,7 +40,7 @@ VALUES (1, 1, 'checking', 'CAD', 523.21),
        (5, 1, 'checking', 'USD', 239.12),
        (5, 2, 'checking', 'EUR', 521.01);
 
-INSERT INTO transfers (sender_id, sender_account, receiver_id, receiver_account, amount, currency, date, reference)
+INSERT INTO transfers (sender_id, sender_account, receiver_id, receiver_account, amount, currency, execution_date, reference)
 VALUES (1, 1, 3, 1, 200, 'CAD', '2019-03-18 19:30:12', ''),
        (2, 1, 4, 1, 2.57, 'EUR', '2019-04-05 02:52:18', 'Movie Theatre Tickets'),
        (5, 2, 5, 1, 300.97, 'EUR', '2019-04-01 09:38:31', ''),

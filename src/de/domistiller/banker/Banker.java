@@ -4,6 +4,8 @@ import de.domistiller.banker.model.Account;
 import de.domistiller.banker.model.Customer;
 import de.domistiller.banker.model.Transfer;
 
+import java.time.LocalDateTime;
+import java.util.InputMismatchException;
 import java.util.Properties;
 import java.util.logging.Logger;
 
@@ -32,60 +34,67 @@ public class Banker {
     public void start() {
         System.out.println("Welcome to Banker!");
 
-        Input.MenuItem choice;
+        Input.MenuItem choice = null;
         do {
-            choice = input.getMenuChoice();
+            try {
+                choice = input.getMenuChoice();
 
-            switch (choice) {
-                case LIST_CUSTOMERS:
-                    System.out.println("LIST CUSTOMERS:");
-                    listCustomers();
-                    break;
-                case CREATE_CUSTOMER:
-                    System.out.println("CREATE NEW CUSTOMER:");
-                    createCustomer();
-                    break;
-                case DELETE_CUSTOMER:
-                    System.out.println("DELETE CUSTOMER:");
-                    deleteCustomer();
-                    break;
-                case LIST_ACCOUNTS:
-                    System.out.println("LIST ACCOUNTS:");
-                    listAccounts();
-                    break;
-                case CREATE_ACCOUNT:
-                    System.out.println("CREATE NEW ACCOUNT:");
-                    createAccount();
-                    break;
-                case DELETE_ACCOUNT:
-                    System.out.println("DELETE ACCOUNT:");
-                    deleteAccount();
-                    break;
-                case SHOW_BANK_STATEMENT:
-                    System.out.println("BANK STATEMENT:");
-                    showBankStatement();
-                    break;
-                case MAKE_TRANSFER:
-                    System.out.println("MAKE WIRE TRANSFER:");
-                    makeTransfer();
-                    break;
-                case EXIT:
-                    System.out.println("Goodbye from Banker!");
+                switch (choice) {
+                    case LIST_CUSTOMERS:
+                        System.out.println("LIST CUSTOMERS:");
+                        listCustomers();
+                        break;
+                    case CREATE_CUSTOMER:
+                        System.out.println("CREATE NEW CUSTOMER:");
+                        createCustomer();
+                        break;
+                    case DELETE_CUSTOMER:
+                        System.out.println("DELETE CUSTOMER:");
+                        deleteCustomer();
+                        break;
+                    case LIST_ACCOUNTS:
+                        System.out.println("LIST ACCOUNTS:");
+                        listAccounts();
+                        break;
+                    case CREATE_ACCOUNT:
+                        System.out.println("CREATE NEW ACCOUNT:");
+                        createAccount();
+                        break;
+                    case DELETE_ACCOUNT:
+                        System.out.println("DELETE ACCOUNT:");
+                        deleteAccount();
+                        break;
+                    case SHOW_BANK_STATEMENT:
+                        System.out.println("BANK STATEMENT:");
+                        showBankStatement();
+                        break;
+                    case MAKE_TRANSFER:
+                        System.out.println("MAKE WIRE TRANSFER:");
+                        makeTransfer();
+                        break;
+                    case EXIT:
+                        System.out.println("Goodbye from Banker!");
+                }
+            } catch (InputMismatchException e) {
+                System.out.println("Wrong input format");
+                input.clearLine();
             }
             System.out.println("\n\n");
             printSeparator('#');
         } while(choice != Input.MenuItem.EXIT);
+        db.close();
     }
 
     private void listCustomers() {
         System.out.println();
-        System.out.println("ID   NAME                     EMAIL                              PHONE             ADDRESS");
-        System.out.println("------------------------------------------------------------------------------------------------------------------");
+        System.out.println("ID   NAME                     NO. OF ACCOUNTS     EMAIL                              PHONE             ADDRESS");
+        printSeparator();
         for (Customer c : db.getCustomers()) {
             System.out.printf(
-                    "%-4d %-20s     %-30s     %-13s     %s\n",
+                    "%-4d %-20s     %-15d     %-30s     %-13s     %s\n",
                     c.getId(),
                     c.getName(),
+                    c.getNumAcounts(),
                     c.getEmail(),
                     c.getPhone(),
                     c.getAddress()
@@ -94,42 +103,39 @@ public class Banker {
     }
 
     private void createCustomer() {
-        var c = input.getNewCustomer();
+        var customer = input.getNewCustomer();
 
-        var success = db.createCustomer(c);
+        var success = db.createCustomer(customer);
         if (success) {
-            System.out.println("Successfully created customer " + c.getName());
+            System.out.println("Successfully created customer " + customer.getName());
         } else {
-            System.out.println("Could not create customer " + c.getName());
+            System.out.println("Could not create customer " + customer.getName());
         }
     }
 
     private void deleteCustomer() {
         var id = input.getCustomerId();
-        System.out.println();
+        if (id == 0) {
+            return;
+        }
 
         var customer = db.getCustomer(id);
-        if (customer == null) {
-            System.out.println("Customer not found");
-        }
 
         var success = db.deleteCustomer(id);
         if (success) {
-            System.out.println("Successfully deleted customer " + customer.getName() + " (ID " + customer.getId());
+            System.out.println("Successfully deleted customer " + customer.getName() + " (ID " + customer.getId() + ")");
         } else {
-            System.out.println("Could not delete customer " + customer.getName() + " (ID " + customer.getId());
+            System.out.println("Could not delete customer " + customer.getName() + " (ID " + customer.getId() + ")");
         }
     }
 
     private void listAccounts() {
         var id = input.getCustomerId();
-        System.out.println();
-
-        var customer = db.getCustomer(id);
-        if (customer == null) {
-            System.out.println("Customer not found");
+        if (id == 0) {
             return;
         }
+
+        var customer = db.getCustomer(id);
 
         System.out.println("ACCOUNTS FOR CUSTOMER " + customer.getName() + " (ID " + customer.getId() + ")\n");
         printSeparator();
@@ -147,15 +153,15 @@ public class Banker {
     }
 
     private void createAccount() {
-        var a = input.getNewAccount();
+        var account = input.getNewAccount();
 
-        if (a == null) {
+        if (account == null) {
             return;
         }
 
-        var success = db.createAccount(a);
+        var success = db.createAccount(account);
         if (success) {
-            System.out.println("Successfully created account " + a.getRef());
+            System.out.println("Successfully created account " + account.getRef());
         } else {
             System.out.println("Could not create account");
         }
@@ -164,6 +170,10 @@ public class Banker {
     private void deleteAccount() {
         var ref = input.getAccountRef();
         System.out.println();
+
+        if (ref == null) {
+            return;
+        }
 
         var success = db.deleteAccount(ref);
         if (success) {
@@ -193,18 +203,18 @@ public class Banker {
 
         System.out.println("TRANSFERS FOR ACCOUNT " + account.getRef());
         printSeparator();
-        System.out.println("DATE     TIME       AMOUNT             SENDER    RECEIVER    REFERENCE");
+        System.out.println("DATE     TIME       AMOUNT             SENDER                           RECEIVER                           REFERENCE");
         printSeparator();
         for (Transfer t : db.getTransfers(ref)) {
             System.out.printf(
-                    "%tD %tR     %s %9.2f %s     %-7s   %-7s     %-100s\n",
-                    t.getDate(),
-                    t.getDate(),
+                    "%tD %tR     %s %9.2f %s     %-30s   %-30s     %-100s\n",
+                    t.getExecutionDate(),
+                    t.getExecutionDate(),
                     t.isIncomingFor(ref) ? "+" : '-',
                     t.getAmount().getAmount(),
                     t.getAmount().getCurrency(),
-                    t.getSender(),
-                    t.getReceiver(),
+                    t.getSenderName() + " (" + t.getSender() + ")",
+                    t.getReceiverName() + " (" + t.getReceiver() + ")",
                     t.getReference()
             );
         }
@@ -221,7 +231,23 @@ public class Banker {
     }
 
     private void makeTransfer() {
+        var transfer = input.getNewTransfer();
 
+        if (transfer == null) {
+            return;
+        }
+
+        transfer.setExecutionDate(LocalDateTime.now());
+
+        // TODO check funds
+
+        System.out.println();
+        var success = db.makeTransfer(transfer);
+        if (success) {
+            System.out.println("Successfully made wire transfer");
+        } else {
+            System.out.println("Could not make wire transfer");
+        }
     }
 
     private void printSeparator() {
@@ -230,7 +256,7 @@ public class Banker {
 
     private void printSeparator(char character) {
         var s = new StringBuilder();
-        for (int i = 0; i < 115; i++) {
+        for (int i = 0; i < 150; i++) {
             s.append(character);
         }
         System.out.println(s);

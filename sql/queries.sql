@@ -1,3 +1,23 @@
+-- Get all customers
+SELECT id, name, address, email, phone, COUNT(account_no)
+FROM customers
+LEFT JOIN accounts ON customers.id = accounts.customer_id
+GROUP BY id, name, address, email, phone;
+
+
+-- -----------------------------------------------------------------------------------
+
+
+-- Get customer
+SELECT id, name, address, email, phone, COUNT(account_no)
+FROM customers
+LEFT JOIN accounts ON customers.id = accounts.customer_id
+WHERE id = ?
+GROUP BY id, name, address, email, phone;
+
+
+-- -----------------------------------------------------------------------------------
+
 -- Get account balance
 -- balance = initial_balance + incoming - outgoing
 -- All transfers are converted to the account currency with the
@@ -14,8 +34,8 @@ SELECT initial_balance
                                                 FROM accounts
                                                 WHERE customer_id = ?
                                                 AND account_no = ?)
-                           AND date <= t.date
-                           ORDER BY date DESC
+                           AND executionDate <= t.executionDate
+                           ORDER BY executionDate DESC
                            LIMIT 1) as rate
          FROM transfers t
          WHERE receiver_id = ?
@@ -29,8 +49,8 @@ SELECT initial_balance
                                                 FROM accounts
                                                 WHERE customer_id = ?
                                                 AND account_no = ?)
-                           AND date <= t.date
-                           ORDER BY date DESC
+                           AND executionDate <= t.executionDate
+                           ORDER BY executionDate DESC
                            LIMIT 1) as rate
          FROM transfers t
          WHERE sender_id = ?
@@ -44,9 +64,14 @@ AND account_no = ?;
 
 
 -- Get transfers
-SELECT *
+SELECT transfers.id,
+       sender_id, sender_account, s.name as sender_name,
+       receiver_id, receiver_account, r.name as receiver_name,
+       amount, currency, executionDate, reference
 FROM transfers
+JOIN customers s ON transfers.sender_id = s.id
+JOIN customers r ON transfers.receiver_id = r.id
 WHERE (sender_id = ? AND sender_account = ?)
 OR (receiver_id = ? AND receiver_account = ?)
-ORDER BY date ASC;
+ORDER BY executionDate ASC;
 

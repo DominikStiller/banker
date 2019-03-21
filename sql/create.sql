@@ -16,9 +16,9 @@ CREATE TABLE ExchangeRates
 (
   from_currency char(3),
   to_currency char(3),
-  date DATETIME,
+  executionDate DATETIME,
   rate decimal(8, 5),
-  PRIMARY KEY (from_currency, to_currency, date),
+  PRIMARY KEY (from_currency, to_currency, executionDate),
   FOREIGN KEY (from_currency)
 		REFERENCES Currencies(code),
 	FOREIGN KEY (to_currency)
@@ -59,7 +59,7 @@ CREATE TABLE Transfers
    receiver_account int NOT NULL,
    amount decimal(10, 2) NOT NULL,
    currency char(3) NOT NULL,
-   date DATETIME NOT NULL,
+   execution_date DATETIME NOT NULL,
    reference varchar(100) DEFAULT '',
    PRIMARY KEY (id),
 	FOREIGN KEY (sender_id)

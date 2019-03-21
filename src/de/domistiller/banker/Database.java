@@ -5,6 +5,7 @@ import de.domistiller.banker.model.Amount;
 import de.domistiller.banker.model.Customer;
 import de.domistiller.banker.model.Transfer;
 
+import java.io.Closeable;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +16,7 @@ import java.util.logging.Logger;
  * Handles all database interaction
  * Contains read and write queries
  */
-public class Database implements AutoCloseable {
+public class Database implements Closeable {
 
     private final static Logger log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
@@ -54,8 +55,19 @@ public class Database implements AutoCloseable {
 
     private void initializeStatements() throws SQLException {
         // See sql/queries.sql for SQL-only code
-        getCustomer = conn.prepareStatement("SELECT * FROM customers WHERE id = ?");
-        getCustomers = conn.prepareStatement("SELECT * FROM customers");
+        getCustomer = conn.prepareStatement(
+                "SELECT id, name, address, email, phone, COUNT(account_no)\n" +
+                    "FROM customers\n" +
+                    "LEFT JOIN accounts ON customers.id = accounts.customer_id\n" +
+                    "WHERE id = ?\n" +
+                    "GROUP BY id, name, address, email, phone"
+        );
+        getCustomers = conn.prepareStatement(
+                "SELECT id, name, address, email, phone, COUNT(account_no)\n" +
+                    "FROM customers\n" +
+                    "LEFT JOIN accounts ON customers.id = accounts.customer_id\n" +
+                    "GROUP BY id, name, address, email, phone"
+        );
         createCustomer = conn.prepareStatement(
                 "INSERT INTO customers (name, address, email, phone) VALUES (?, ?, ?, ?)");
         deleteCustomer = conn.prepareStatement("DELETE FROM customers WHERE id = ?");
@@ -76,7 +88,7 @@ public class Database implements AutoCloseable {
                     "                                                FROM accounts\n" +
                     "                                                WHERE customer_id = ?\n" +
                     "                                                AND account_no = ?)\n" +
-                    "                           AND date <= t.date\n" +
+                    "                           AND date <= t.execution_date\n" +
                     "                           ORDER BY date DESC\n" +
                     "                           LIMIT 1) as rate\n" +
                     "         FROM transfers t\n" +
@@ -90,7 +102,7 @@ public class Database implements AutoCloseable {
                     "                                                FROM accounts\n" +
                     "                                                WHERE customer_id = ?\n" +
                     "                                                AND account_no = ?)\n" +
-                    "                           AND date <= t.date\n" +
+                    "                           AND date <= t.execution_date\n" +
                     "                           ORDER BY date DESC\n" +
                     "                           LIMIT 1) as rate\n" +
                     "         FROM transfers t\n" +
@@ -106,13 +118,21 @@ public class Database implements AutoCloseable {
         deleteAccount = conn.prepareStatement("DELETE FROM accounts where customer_id = ? AND account_no = ?");
 
         getTransfers = conn.prepareStatement(
-                "SELECT *\n" +
+                "SELECT transfers.id,\n" +
+                    "       sender_id, sender_account, s.name as sender_name,\n" +
+                    "       receiver_id, receiver_account, r.name as receiver_name,\n" +
+                    "       amount, currency, execution_date, reference\n" +
                     "FROM transfers\n" +
+                    "JOIN customers s ON transfers.sender_id = s.id\n" +
+                    "JOIN customers r ON transfers.receiver_id = r.id\n" +
                     "WHERE (sender_id = ? AND sender_account = ?)\n" +
                     "OR (receiver_id = ? AND receiver_account = ?)\n" +
-                    "ORDER BY date ASC"
+                    "ORDER BY execution_date ASC;"
         );
-        // TODO makeTransfer
+        makeTransfer = conn.prepareStatement(
+                "INSERT INTO transfers(sender_id, sender_account, receiver_id, receiver_account, amount, currency, execution_date, reference)\n" +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        );
     }
 
     Customer getCustomer(int id) {
@@ -148,7 +168,8 @@ public class Database implements AutoCloseable {
                 rs.getString(2),
                 rs.getString(3),
                 rs.getString(4),
-                rs.getString(5));
+                rs.getString(5),
+                rs.getInt(6));
     }
 
     boolean createCustomer(Customer c) {
@@ -284,10 +305,12 @@ public class Database implements AutoCloseable {
                     list.add(new Transfer(
                             rs.getInt(1),
                             new Account.Reference(rs.getInt(2), rs.getInt(3)),
-                            new Account.Reference(rs.getInt(4), rs.getInt(5)),
-                            new Amount(rs.getDouble(6), rs.getString(7)),
-                            rs.getTimestamp(8),
-                            rs.getString(9)
+                            rs.getString(4),
+                            new Account.Reference(rs.getInt(5), rs.getInt(6)),
+                            rs.getString(7),
+                            new Amount(rs.getDouble(8), rs.getString(9)),
+                            rs.getTimestamp(10).toLocalDateTime(),
+                            rs.getString(11)
                     ));
                 }
             }
@@ -295,6 +318,25 @@ public class Database implements AutoCloseable {
             log.log(Level.SEVERE, "error fetching transfers", e);
         }
         return list;
+    }
+
+    boolean makeTransfer(Transfer t) {
+        try {
+            makeTransfer.setInt(1, t.getSender().getCustomerId());
+            makeTransfer.setInt(2, t.getSender().getAccountNumber());
+            makeTransfer.setInt(3, t.getReceiver().getCustomerId());
+            makeTransfer.setInt(4, t.getReceiver().getAccountNumber());
+            makeTransfer.setDouble(5, t.getAmount().getAmount());
+            makeTransfer.setString(6, t.getAmount().getCurrency());
+            makeTransfer.setObject(7, t.getExecutionDate());
+            makeTransfer.setString(8, t.getReference());
+
+            var result = makeTransfer.executeUpdate();
+            return result == 1;
+        } catch (SQLException e) {
+            log.log(Level.SEVERE, "error making transfer", e);
+            return false;
+        }
     }
 
     @Override
