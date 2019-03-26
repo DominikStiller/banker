@@ -25,16 +25,16 @@ public class Database implements Closeable {
     private PreparedStatement getCustomer;
     private PreparedStatement getCustomers;
     private PreparedStatement createCustomer;
-    private PreparedStatement deleteCustomer;
 
     private PreparedStatement getAccount;
     private PreparedStatement getAccounts;
     private PreparedStatement getAccountBalance;
     private PreparedStatement createAccount;
-    private PreparedStatement deleteAccount;
 
     private PreparedStatement getTransfers;
     private PreparedStatement makeTransfer;
+
+    private PreparedStatement convertCurrency;
 
     public Database(String server, String user, String password) {
         try {
@@ -70,7 +70,6 @@ public class Database implements Closeable {
         );
         createCustomer = conn.prepareStatement(
                 "INSERT INTO customers (name, address, email, phone) VALUES (?, ?, ?, ?)");
-        deleteCustomer = conn.prepareStatement("DELETE FROM customers WHERE id = ?");
 
         getAccount = conn.prepareStatement(
                 "SELECT *\n" +
@@ -80,42 +79,37 @@ public class Database implements Closeable {
         getAccounts = conn.prepareStatement("SELECT * FROM accounts WHERE customer_id = ?");
         getAccountBalance = conn.prepareStatement(
                     "SELECT initial_balance\n" +
-                    "+ (SELECT IFNULL(SUM(x.amount * x.rate), 0)\n" +
-                    "   FROM (SELECT t.amount, (SELECT rate\n" +
-                    "                           FROM exchangerates\n" +
-                    "                           WHERE from_currency = t.currency\n" +
-                    "                           AND to_currency = (SELECT currency\n" +
-                    "                                                FROM accounts\n" +
-                    "                                                WHERE customer_id = ?\n" +
-                    "                                                AND account_no = ?)\n" +
-                    "                           AND date <= t.execution_date\n" +
-                    "                           ORDER BY date DESC\n" +
-                    "                           LIMIT 1) as rate\n" +
-                    "         FROM transfers t\n" +
-                    "         WHERE receiver_id = ?\n" +
-                    "         AND receiver_account = ?) as x)\n" +
-                    "- (SELECT IFNULL(SUM(x.amount * x.rate), 0)\n" +
-                    "   FROM (SELECT t.amount, (SELECT rate\n" +
-                    "                           FROM exchangerates\n" +
-                    "                           WHERE from_currency = t.currency\n" +
-                    "                           AND to_currency = (SELECT currency\n" +
-                    "                                                FROM accounts\n" +
-                    "                                                WHERE customer_id = ?\n" +
-                    "                                                AND account_no = ?)\n" +
-                    "                           AND date <= t.execution_date\n" +
-                    "                           ORDER BY date DESC\n" +
-                    "                           LIMIT 1) as rate\n" +
-                    "         FROM transfers t\n" +
-                    "         WHERE sender_id = ?\n" +
-                    "         AND sender_account = ?) as x) as balance, currency\n" +
-                    "FROM accounts\n" +
-                    "WHERE customer_id = ?\n" +
-                    "AND account_no = ?"
+                        "+ (SELECT IFNULL(SUM(x.amount * x.rate), 0)\n" +
+                        "   FROM (SELECT t.amount, (SELECT rate\n" +
+                        "                           FROM exchangerates\n" +
+                        "                           WHERE from_currency = t.currency\n" +
+                        "                           AND to_currency = (SELECT currency\n" +
+                        "                                                FROM accounts\n" +
+                        "                                                WHERE customer_id = ?\n" +
+                        "                                                AND account_no = ?)\n" +
+                        "                           ) as rate\n" +
+                        "         FROM transfers t\n" +
+                        "         WHERE receiver_id = ?\n" +
+                        "         AND receiver_account = ?) as x)\n" +
+                        "- (SELECT IFNULL(SUM(x.amount * x.rate), 0)\n" +
+                        "   FROM (SELECT t.amount, (SELECT rate\n" +
+                        "                           FROM exchangerates\n" +
+                        "                           WHERE from_currency = t.currency\n" +
+                        "                           AND to_currency = (SELECT currency\n" +
+                        "                                                FROM accounts\n" +
+                        "                                                WHERE customer_id = ?\n" +
+                        "                                                AND account_no = ?)\n" +
+                        "                           ) as rate\n" +
+                        "         FROM transfers t\n" +
+                        "         WHERE sender_id = ?\n" +
+                        "         AND sender_account = ?) as x) as balance, currency\n" +
+                        "FROM accounts\n" +
+                        "WHERE customer_id = ?\n" +
+                        "AND account_no = ?"
         );
         createAccount = conn.prepareStatement(
                 "INSERT INTO accounts (customer_id, account_no, type, currency, initial_balance) \n" +
                 "VALUES (?, ?, ?, ?, ?)");
-        deleteAccount = conn.prepareStatement("DELETE FROM accounts where customer_id = ? AND account_no = ?");
 
         getTransfers = conn.prepareStatement(
                 "SELECT transfers.id,\n" +
@@ -132,6 +126,13 @@ public class Database implements Closeable {
         makeTransfer = conn.prepareStatement(
                 "INSERT INTO transfers(sender_id, sender_account, receiver_id, receiver_account, amount, currency, execution_date, reference)\n" +
                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        );
+
+        convertCurrency = conn.prepareStatement(
+                "SELECT ? * rate\n" +
+                    "FROM exchangerates\n" +
+                    "WHERE from_currency = ?\n" +
+                    "AND to_currency = ?"
         );
     }
 
@@ -183,17 +184,6 @@ public class Database implements Closeable {
             return result == 1;
         } catch (SQLException e) {
             log.log(Level.SEVERE, "error creating customer", e);
-            return false;
-        }
-    }
-
-    boolean deleteCustomer(int id) {
-        try {
-            deleteCustomer.setInt(1, id);
-            var result = deleteCustomer.executeUpdate();
-            return result == 1;
-        } catch (SQLException e) {
-            log.log(Level.SEVERE, "error deleting customer", e);
             return false;
         }
     }
@@ -279,19 +269,6 @@ public class Database implements Closeable {
         }
     }
 
-    boolean deleteAccount(Account.Reference a) {
-        try {
-            deleteAccount.setInt(1, a.getCustomerId());
-            deleteAccount.setInt(2, a.getAccountNumber());
-            var result = deleteAccount.executeUpdate();
-            return result == 1;
-        } catch (SQLException e) {
-            log.log(Level.SEVERE, "error deleting account", e);
-            return false;
-        }
-    }
-
-
     List<Transfer> getTransfers(Account.Reference ref) {
         var list = new ArrayList<Transfer>();
         try {
@@ -339,19 +316,34 @@ public class Database implements Closeable {
         }
     }
 
+    Amount convertCurrency(Amount from, String toCurrency) {
+        try {
+            convertCurrency.setDouble(1, from.getAmount());
+            convertCurrency.setString(2, from.getCurrency());
+            convertCurrency.setString(3, toCurrency);
+
+            try (var rs = convertCurrency.executeQuery()) {
+                if (rs.next()) {
+                    return new Amount(rs.getDouble(1), toCurrency);
+                }
+            }
+        } catch (SQLException e) {
+            log.log(Level.SEVERE, "error converting currency", e);
+        }
+        return null;
+    }
+
     @Override
     public void close() {
         try {
             getCustomer.close();
             getCustomers.close();
             createCustomer.close();
-            deleteCustomer.close();
 
             getAccount.close();
             getAccounts.close();
             getAccountBalance.close();
             createAccount.close();
-            deleteAccount.close();
 
             getTransfers.close();
             makeTransfer.close();

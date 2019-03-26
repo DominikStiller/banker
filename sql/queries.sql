@@ -34,9 +34,7 @@ SELECT initial_balance
                                                 FROM accounts
                                                 WHERE customer_id = ?
                                                 AND account_no = ?)
-                           AND executionDate <= t.executionDate
-                           ORDER BY executionDate DESC
-                           LIMIT 1) as rate
+                           ) as rate
          FROM transfers t
          WHERE receiver_id = ?
          AND receiver_account = ?) as x)
@@ -49,9 +47,7 @@ SELECT initial_balance
                                                 FROM accounts
                                                 WHERE customer_id = ?
                                                 AND account_no = ?)
-                           AND executionDate <= t.executionDate
-                           ORDER BY executionDate DESC
-                           LIMIT 1) as rate
+                           ) as rate
          FROM transfers t
          WHERE sender_id = ?
          AND sender_account = ?) as x) as balance, currency
@@ -67,11 +63,20 @@ AND account_no = ?;
 SELECT transfers.id,
        sender_id, sender_account, s.name as sender_name,
        receiver_id, receiver_account, r.name as receiver_name,
-       amount, currency, executionDate, reference
+       amount, currency, execution_date, reference
 FROM transfers
 JOIN customers s ON transfers.sender_id = s.id
 JOIN customers r ON transfers.receiver_id = r.id
 WHERE (sender_id = ? AND sender_account = ?)
 OR (receiver_id = ? AND receiver_account = ?)
-ORDER BY executionDate ASC;
+ORDER BY execution_date ASC;
 
+
+-- -----------------------------------------------------------------------------------
+
+
+-- Convert currency
+SELECT ? * rate
+FROM exchangerates
+WHERE from_currency = ?
+AND to_currency = ?;

@@ -12,16 +12,16 @@ VALUES ('CAD', 'Canadian Dollar'),
        ('EUR', 'Euro');
 
 -- from_rate * from_amount = to_amount
-INSERT INTO exchangerates(from_currency, to_currency, executionDate, rate)
-VALUES ('CAD', 'CAD', '1000-01-01 00:00:00', 1.0),
-       ('USD', 'USD', '1000-01-01 00:00:00', 1.0),
-       ('EUR', 'EUR', '1000-01-01 00:00:00', 1.0),
-       ('CAD', 'USD', '2019-03-13 04:03', 0.75126),
-       ('CAD', 'EUR', '2019-03-13 04:02', 0.66356),
-       ('USD', 'CAD', '2019-03-13 04:04', 1.33114),
-       ('USD', 'EUR', '2019-03-13 04:04', 0.88323),
-       ('EUR', 'CAD', '2019-03-13 04:05', 1.50715),
-       ('EUR', 'USD', '2019-03-13 04:05', 1.13220);
+INSERT INTO exchangerates(from_currency, to_currency, rate)
+VALUES ('CAD', 'CAD', 1.0),
+       ('USD', 'USD', 1.0),
+       ('EUR', 'EUR', 1.0),
+       ('CAD', 'USD', 0.75126),
+       ('CAD', 'EUR', 0.66356),
+       ('USD', 'CAD', 1.33114),
+       ('USD', 'EUR', 0.88323),
+       ('EUR', 'CAD', 1.50715),
+       ('EUR', 'USD', 1.13220);
 
 INSERT INTO customers (name, address, email, phone)
 VALUES ('Roxane Weavers', '78976 Almo Drive, North Bay Ontario P1A T7N', 'rweavers4@cargocollective.com', '126-293-9927'),

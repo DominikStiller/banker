@@ -16,9 +16,8 @@ CREATE TABLE ExchangeRates
 (
   from_currency char(3),
   to_currency char(3),
-  executionDate DATETIME,
   rate decimal(8, 5),
-  PRIMARY KEY (from_currency, to_currency, executionDate),
+  PRIMARY KEY (from_currency, to_currency),
   FOREIGN KEY (from_currency)
 		REFERENCES Currencies(code),
 	FOREIGN KEY (to_currency)
@@ -45,7 +44,7 @@ CREATE TABLE Accounts
 	PRIMARY KEY (customer_id, account_no),
 	FOREIGN KEY (customer_id)
 	   REFERENCES Customers(id)
-		ON DELETE CASCADE,
+		ON DELETE RESTRICT,
 	FOREIGN KEY (currency)
 		REFERENCES Currencies(code)
 );

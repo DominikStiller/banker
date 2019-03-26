@@ -48,10 +48,6 @@ public class Banker {
                         System.out.println("CREATE NEW CUSTOMER:");
                         createCustomer();
                         break;
-                    case DELETE_CUSTOMER:
-                        System.out.println("DELETE CUSTOMER:");
-                        deleteCustomer();
-                        break;
                     case LIST_ACCOUNTS:
                         System.out.println("LIST ACCOUNTS:");
                         listAccounts();
@@ -59,10 +55,6 @@ public class Banker {
                     case CREATE_ACCOUNT:
                         System.out.println("CREATE NEW ACCOUNT:");
                         createAccount();
-                        break;
-                    case DELETE_ACCOUNT:
-                        System.out.println("DELETE ACCOUNT:");
-                        deleteAccount();
                         break;
                     case SHOW_BANK_STATEMENT:
                         System.out.println("BANK STATEMENT:");
@@ -113,22 +105,6 @@ public class Banker {
         }
     }
 
-    private void deleteCustomer() {
-        var id = input.getCustomerId();
-        if (id == 0) {
-            return;
-        }
-
-        var customer = db.getCustomer(id);
-
-        var success = db.deleteCustomer(id);
-        if (success) {
-            System.out.println("Successfully deleted customer " + customer.getName() + " (ID " + customer.getId() + ")");
-        } else {
-            System.out.println("Could not delete customer " + customer.getName() + " (ID " + customer.getId() + ")");
-        }
-    }
-
     private void listAccounts() {
         var id = input.getCustomerId();
         if (id == 0) {
@@ -164,22 +140,6 @@ public class Banker {
             System.out.println("Successfully created account " + account.getRef());
         } else {
             System.out.println("Could not create account");
-        }
-    }
-
-    private void deleteAccount() {
-        var ref = input.getAccountRef();
-        System.out.println();
-
-        if (ref == null) {
-            return;
-        }
-
-        var success = db.deleteAccount(ref);
-        if (success) {
-            System.out.println("Successfully deleted account " + ref);
-        } else {
-            System.out.println("Could not delete account " + ref);
         }
     }
 
@@ -239,9 +199,21 @@ public class Banker {
 
         transfer.setExecutionDate(LocalDateTime.now());
 
-        // TODO check funds
-
         System.out.println();
+
+        var senderAccountBalance = db.getAccountBalance(transfer.getSender());
+        var senderAccountBalanceInTransferCurrency =
+                db.convertCurrency(senderAccountBalance, transfer.getAmount().getCurrency());
+
+        // Check if sender has enough funds
+        if (senderAccountBalanceInTransferCurrency.getAmount() < transfer.getAmount().getAmount()) {
+            System.out.println("Sender account does not have sufficient funds.");
+            System.out.println("Sender account balance: " + senderAccountBalance);
+            System.out.println("Transfer amount: " + transfer.getAmount());
+            System.out.println("Difference: " + senderAccountBalanceInTransferCurrency.minus(transfer.getAmount()));
+            return;
+        }
+
         var success = db.makeTransfer(transfer);
         if (success) {
             System.out.println("Successfully made wire transfer");

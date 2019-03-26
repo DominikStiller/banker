@@ -16,10 +16,8 @@ public class Input {
         EXIT("Exit"),
         LIST_CUSTOMERS("List customers"),
         CREATE_CUSTOMER("Create customer"),
-        DELETE_CUSTOMER("Delete customer"),
         LIST_ACCOUNTS("List accounts of customer"),
         CREATE_ACCOUNT("Create account"),
-        DELETE_ACCOUNT("Delete account"),
         SHOW_BANK_STATEMENT("Show bank statement"),
         MAKE_TRANSFER("Make wire transfer");
 
@@ -153,6 +151,7 @@ public class Input {
             return null;
         }
 
+        System.out.println();
         System.out.println("Receiver:");
         var receiver = getAccountRef();
         if (receiver == null) {

@@ -21,6 +21,13 @@ public class Amount {
         return new Amount(Math.abs(amount), currency);
     }
 
+    public Amount minus(Amount other) {
+        if (!other.currency.equals(currency)) {
+            throw new IllegalArgumentException("Only amounts of the same currency can be used");
+        }
+        return new Amount(this.amount - other.amount, currency);
+    }
+
     @Override
     public String toString() {
         return String.format("%.2f %s", amount, currency);
