@@ -40,6 +40,8 @@ public class Main {
             log.setLevel(Level.SEVERE);
         }
 
+        log.info("settings loaded");
+
         new Banker(settings).start();
     }
 }

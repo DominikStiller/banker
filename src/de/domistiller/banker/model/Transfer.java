@@ -76,8 +76,14 @@ public class Transfer {
         return reference;
     }
 
-    public boolean isIncomingFor(Account.Reference receiver) {
-        return this.receiver.equals(receiver);
+    public char getSignFor(Account.Reference account) {
+        if (account.equals(this.sender)) {
+            return '-';
+        } else if (account.equals(this.receiver)) {
+            return '+';
+        } else {
+            throw new IllegalArgumentException("Account must either be sender or receiver");
+        }
     }
 
     @Override

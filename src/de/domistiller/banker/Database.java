@@ -34,6 +34,7 @@ public class Database implements Closeable {
     private PreparedStatement getTransfers;
     private PreparedStatement makeTransfer;
 
+    private PreparedStatement getCurrencies;
     private PreparedStatement convertCurrency;
 
     public Database(String server, String user, String password) {
@@ -128,6 +129,9 @@ public class Database implements Closeable {
                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
         );
 
+        getCurrencies = conn.prepareStatement(
+                "SELECT code, name FROM currencies"
+        );
         convertCurrency = conn.prepareStatement(
                 "SELECT ? * rate\n" +
                     "FROM exchangerates\n" +
@@ -225,8 +229,7 @@ public class Database implements Closeable {
                 rs.getInt(1),
                 rs.getInt(2),
                 Account.Type.fromString(rs.getString(3)),
-                rs.getString(4),
-                rs.getDouble(5));
+                new Amount(rs.getDouble(5), rs.getString(4)));
     }
 
     Amount getAccountBalance(Account.Reference ref) {
@@ -316,6 +319,18 @@ public class Database implements Closeable {
         }
     }
 
+    List<String> getCurrencies() {
+        var list = new ArrayList<String>();
+        try (var rs = getCurrencies.executeQuery()) {
+            while(rs.next()) {
+                list.add(rs.getString(1));
+            }
+        } catch (SQLException e) {
+            log.log(Level.SEVERE, "error fetching currencies", e);
+        }
+        return list;
+    }
+
     Amount convertCurrency(Amount from, String toCurrency) {
         try {
             convertCurrency.setDouble(1, from.getAmount());
@@ -348,7 +363,12 @@ public class Database implements Closeable {
             getTransfers.close();
             makeTransfer.close();
 
+            getCurrencies.close();
+            convertCurrency.close();
+
             conn.close();
+
+            log.info("prepared statements and database connection closed");
         } catch (SQLException e) {
             log.log(Level.SEVERE, "error when closing connection", e);
         }

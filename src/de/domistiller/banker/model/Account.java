@@ -4,6 +4,33 @@ import java.util.Objects;
 
 public class Account {
 
+    private Reference ref;
+    private Type type;
+    private Amount initialBalance;
+
+    public Account(int customerId, int accountNumber, Type type, Amount initialBalance) {
+        this.ref = new Reference(customerId, accountNumber);
+        this.type = type;
+        this.initialBalance = initialBalance;
+    }
+
+    public Reference getRef() {
+        return ref;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public Amount getInitialBalance() {
+        return initialBalance;
+    }
+
+
+    /**
+     * Represents a primary key for an account
+     * Consists of the customer id and the account number
+     */
     public static class Reference {
         private int customerId;
         private int accountNumber;
@@ -41,6 +68,7 @@ public class Account {
         }
     }
 
+
     public enum Type {
 
         SAVINGS,
@@ -68,27 +96,5 @@ public class Account {
                     return "Unknown";
             }
         }
-    }
-
-    private Reference ref;
-    private Type type;
-    private Amount initialBalance;
-
-    public Account(int customerId, int accountNumber, Type type, String currency, double initialBalance) {
-        this.ref = new Reference(customerId, accountNumber);
-        this.type = type;
-        this.initialBalance = new Amount(initialBalance, currency);
-    }
-
-    public Reference getRef() {
-        return ref;
-    }
-
-    public Type getType() {
-        return type;
-    }
-
-    public Amount getInitialBalance() {
-        return initialBalance;
     }
 }

@@ -97,6 +97,8 @@ public class Banker {
     private void createCustomer() {
         var customer = input.getNewCustomer();
 
+        System.out.println();
+
         var success = db.createCustomer(customer);
         if (success) {
             System.out.println("Successfully created customer " + customer.getName());
@@ -135,6 +137,8 @@ public class Banker {
             return;
         }
 
+        System.out.println();
+
         var success = db.createAccount(account);
         if (success) {
             System.out.println("Successfully created account " + account.getRef());
@@ -167,10 +171,10 @@ public class Banker {
         printSeparator();
         for (Transfer t : db.getTransfers(ref)) {
             System.out.printf(
-                    "%tD %tR     %s %9.2f %s     %-30s   %-30s     %-100s\n",
+                    "%tD %tR     %c %9.2f %s     %-30s   %-30s     %-100s\n",
                     t.getExecutionDate(),
                     t.getExecutionDate(),
-                    t.isIncomingFor(ref) ? "+" : '-',
+                    t.getSignFor(ref),
                     t.getAmount().getAmount(),
                     t.getAmount().getCurrency(),
                     t.getSenderName() + " (" + t.getSender() + ")",

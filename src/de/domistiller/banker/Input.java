@@ -5,6 +5,7 @@ import de.domistiller.banker.model.Amount;
 import de.domistiller.banker.model.Customer;
 import de.domistiller.banker.model.Transfer;
 
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -31,22 +32,29 @@ public class Input {
     private Database db;
     private Scanner in;
 
+    // Currencies are cached locally because they are used a lot
+    // and are assumed to be static for the duration of an execution
+    private List<String> currencies;
+
     Input(Database db) {
         this.db = db;
         in = new Scanner(System.in);
+        currencies = db.getCurrencies();
     }
 
     MenuItem getMenuChoice() {
         int choice;
+        boolean valid;
 
         do {
             System.out.println();
             System.out.println();
             System.out.println("MENU:");
 
+            // Print menu in two columns
             for (int i = 1; i < MenuItem.values().length; i++) {
                 System.out.printf("%d. %-28s", i, MenuItem.values()[i].description);
-                if (i % 3 == 0) {
+                if (i % 2 == 0) {
                     System.out.println();
                 }
             }
@@ -55,18 +63,16 @@ public class Input {
             System.out.print("Choice: ");
 
             choice = in.nextInt();
-            if (!validateMenuChoice(choice)) {
+
+            valid = choice >= 0 && choice < MenuItem.values().length;;
+            if (!valid) {
                 System.out.println("Invalid menu choice");
             }
-        } while(!validateMenuChoice(choice));
+        } while(!valid);
         System.out.println();
         System.out.println();
 
         return MenuItem.values()[choice];
-    }
-
-    private boolean validateMenuChoice(int choice) {
-        return choice >= 0 && choice < MenuItem.values().length;
     }
 
     Customer getNewCustomer() {
@@ -113,13 +119,9 @@ public class Input {
         System.out.print("Type (checking/savings): ");
         var type = Account.Type.fromString(in.next());
 
-        System.out.print("Currency (CAD/USD/EUR): ");
-        var currency = in.next();
+        var initialBalance = getAmount("Initial balance");
 
-        System.out.print("Initial Balance in " + currency + ": ");
-        var initialBalance = in.nextDouble();
-
-        return new Account(ref.getCustomerId(), ref.getAccountNumber(), type, currency, initialBalance);
+        return new Account(ref.getCustomerId(), ref.getAccountNumber(), type, initialBalance);
     }
 
     Account.Reference getAccountRef() {
@@ -162,21 +164,13 @@ public class Input {
             return null;
         }
 
-        System.out.print("Amount: ");
-        var amount = in.nextDouble();
-
-        System.out.print("Currency (CAD/USD/EUR): ");
-        var currency = in.next();
+        var amount = getAmount();
 
         clearLine();
         System.out.print("Reference: ");
         var reference = in.nextLine();
 
-        return new Transfer(sender, receiver, new Amount(amount, currency), reference);
-    }
-
-    void clearLine() {
-        in.nextLine();
+        return new Transfer(sender, receiver, amount, reference);
     }
 
     /*
@@ -200,5 +194,36 @@ public class Input {
                     db.getAccountBalance(a.getRef())
             );
         }
+    }
+
+    private Amount getAmount() {
+        return getAmount("Amount");
+    }
+
+    private Amount getAmount(String name) {
+        double amount;
+        String currency;
+        boolean valid;
+
+        do {
+            System.out.print(name + " in " + getCurrencyList() + ": ");
+            amount = in.nextDouble();
+            currency = in.next();
+
+            valid = currencies.contains(currency);
+            if (!valid) {
+                System.out.println("Invalid currency");
+            }
+        } while (!valid);
+
+        return new Amount(amount, currency);
+    }
+
+    private String getCurrencyList() {
+        return String.join("/", currencies);
+    }
+
+    void clearLine() {
+        in.nextLine();
     }
 }

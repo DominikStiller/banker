@@ -4,7 +4,7 @@ DROP TABLE IF EXISTS Customers;
 DROP TABLE IF EXISTS ExchangeRates;
 DROP TABLE IF EXISTS Currencies;
 
-
+-- Allowed currencies
 CREATE TABLE Currencies
 (
 	code char(3),
