@@ -210,13 +210,23 @@ public class Banker {
             System.out.println("Sender account does not have sufficient funds.");
             System.out.println("Sender account balance: " + senderAccountBalance);
             System.out.println("Transfer amount: " + transfer.getAmount());
-            System.out.println("Difference: " + senderAccountBalanceInTransferCurrency.minus(transfer.getAmount()));
+            System.out.println("Missing amount: " + senderAccountBalanceInTransferCurrency.minus(transfer.getAmount()));
             return;
         }
 
         var success = db.makeTransfer(transfer);
         if (success) {
             System.out.println("Successfully made wire transfer");
+            System.out.println();
+            System.out.println("TRANSFER DETAILS");
+            System.out.printf("Date: %tD %tR\n",
+                    transfer.getExecutionDate(), transfer.getExecutionDate());
+            System.out.println("Sender: " + db.getCustomer(transfer.getSender().getCustomerId()).getName()
+                    + " (Account " + transfer.getSender() + ")");
+            System.out.println("Receiver: " + db.getCustomer(transfer.getReceiver().getCustomerId()).getName()
+                    + " (Account " + transfer.getReceiver() + ")");
+            System.out.println("Amount: " + transfer.getAmount());
+            System.out.println("Reference: " + transfer.getReference());
         } else {
             System.out.println("Could not make wire transfer");
         }

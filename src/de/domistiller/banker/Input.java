@@ -192,12 +192,12 @@ public class Input {
 
     private void listAccounts(Customer customer) {
         System.out.println("ACCOUNTS FOR CUSTOMER " + customer.getName());
-        System.out.println("NO.   TYPE        CURRENCY");
+        System.out.println("NO.   TYPE        BALANCE");
         for (Account a : db.getAccounts(customer.getId())) {
             System.out.printf("%-3d   %-9s   %s\n",
                     a.getRef().getAccountNumber(),
                     a.getType(),
-                    a.getInitialBalance().getCurrency()
+                    db.getAccountBalance(a.getRef())
             );
         }
     }
