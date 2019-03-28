@@ -5,6 +5,7 @@ import de.domistiller.banker.model.Amount;
 import de.domistiller.banker.model.Customer;
 import de.domistiller.banker.model.Transfer;
 
+import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
 
@@ -60,9 +61,8 @@ public class Input {
             }
             System.out.println("0. Exit");
             System.out.println();
-            System.out.print("Choice: ");
 
-            choice = in.nextInt();
+            choice = getIntInput("Choice");
 
             valid = choice >= 0 && choice < MenuItem.values().length;;
             if (!valid) {
@@ -77,17 +77,11 @@ public class Input {
 
     Customer getNewCustomer() {
         clearLine();
-        System.out.print("Name: ");
-        var c = new Customer(in.nextLine());
 
-        System.out.print("Address: ");
-        c.setAddress(in.nextLine());
-
-        System.out.print("Email: ");
-        c.setEmail(in.next());
-
-        System.out.print("Phone: ");
-        c.setPhone(in.next());
+        var c = new Customer(getStringInputWithSpaces("Name"));
+        c.setAddress(getStringInputWithSpaces("Address"));
+        c.setEmail(getStringInput("Email"));
+        c.setPhone(getStringInput("Phone"));
 
         System.out.println();
 
@@ -99,83 +93,156 @@ public class Input {
         listCustomers();
         System.out.println();
 
-        System.out.print("Customer ID: ");
-        var id = in.nextInt();
-        var c = db.getCustomer(id);
-        if (c == null) {
-            System.out.println("Customer not found");
-            return 0;
-        }
+        int id;
+        boolean valid;
+
+        do {
+            id = getIntInput("Customer ID");
+
+            valid = db.getCustomer(id) != null;
+            if (!valid) {
+                System.out.println("Customer not found");
+            }
+        } while (!valid);
 
         return id;
     }
 
     Account getNewAccount() {
-        var ref = getAccountRef();
-        if (ref == null) {
-            return null;
-        }
-
-        System.out.print("Type (checking/savings): ");
-        var type = Account.Type.fromString(in.next());
-
+        var ref = getNonExistingAccountRef();
         var initialBalance = getAmount("Initial balance");
 
-        return new Account(ref.getCustomerId(), ref.getAccountNumber(), type, initialBalance);
+        return new Account(ref.getCustomerId(), ref.getAccountNumber(), initialBalance);
     }
 
-    Account.Reference getAccountRef() {
+    Account.Reference getExistingAccountRef() {
+        return getAccountRef(true);
+    }
+
+    Account.Reference getNonExistingAccountRef() {
+        return getAccountRef(false);
+    }
+
+    private Account.Reference getAccountRef(boolean existingOrNew) {
         var customerId = getCustomerId();
-        if (customerId == 0) {
-            return null;
-        }
-
         var customer = db.getCustomer(customerId);
-        System.out.println();
 
+        System.out.println();
         listAccounts(customer);
-
         System.out.println();
-        System.out.print("Account Number: ");
-        var accountNo = in.nextInt();
 
-        return new Account.Reference(customerId, accountNo);
+        int accountNo;
+        Account.Reference ref;
+        boolean valid = false;
+
+        do {
+            accountNo = getIntInput(existingOrNew ? "Account Number" : "New Account Number");
+            ref = new Account.Reference(customerId, accountNo);
+
+            if (existingOrNew) {
+                if (db.getAccount(ref) != null) {
+                    valid = true;
+                } else {
+                    System.out.println("Account not found");
+                }
+            } else {
+                if (db.getAccount(ref) == null) {
+                    valid = true;
+                } else {
+                    System.out.println("Account already exists");
+                }
+            }
+        } while (!valid);
+
+        return ref;
     }
 
     Transfer getNewTransfer() {
         System.out.println("Sender:");
-        var sender = getAccountRef();
-        if (sender == null) {
-            return null;
-        }
-        if (db.getAccount(sender) == null) {
-            System.out.println("Account not found");
-            return null;
-        }
+        var sender = getExistingAccountRef();
 
         System.out.println();
         System.out.println("Receiver:");
-        var receiver = getAccountRef();
-        if (receiver == null) {
-            return null;
-        }
-        if (db.getAccount(receiver) == null) {
-            System.out.println("Account not found");
-            return null;
-        }
+        var receiver = getExistingAccountRef();
 
         var amount = getAmount();
 
         clearLine();
-        System.out.print("Reference: ");
-        var reference = in.nextLine();
+        var reference = getStringInputWithSpaces("Reference");
 
         return new Transfer(sender, receiver, amount, reference);
     }
 
-    /*
-     * Helper methods
-     */
+    // Input helper methods including validation
+    private int getIntInput(String prompt) {
+        int input = 0;
+        boolean valid = false;
+
+        do {
+            System.out.print(prompt + ": ");
+            try {
+                input = in.nextInt();
+                valid = true;
+            } catch (InputMismatchException ignore) {}
+
+            if (!valid) {
+                System.out.println("Invalid input");
+                clearLine();
+            }
+        } while (!valid);
+
+        return input;
+    }
+
+    private String getStringInput(String prompt) {
+        System.out.print(prompt + ": ");
+        return in.next();
+    }
+
+    private String getStringInputWithSpaces(String prompt) {
+        System.out.print(prompt + ": ");
+        return in.nextLine();
+    }
+
+    private Amount getAmount() {
+        return getAmount("Amount");
+    }
+
+    private Amount getAmount(String name) {
+        double amount = 0;
+        String currency = "";
+        boolean validAmount = false;
+        boolean validCurrency = false;
+
+        do {
+            System.out.print(name + " in " + getCurrencyList() + ": ");
+
+            try {
+                amount = in.nextDouble();
+                currency = in.next();
+                validAmount = true;
+                validCurrency = true;
+            } catch (InputMismatchException ignore) {}
+
+            validAmount = validAmount && amount > 0;
+            if (!validAmount) {
+                System.out.println("Invalid amount, must be positive number");
+            } else {
+                validCurrency = validCurrency && currencies.contains(currency);
+                if (!validCurrency) {
+                    System.out.println("Invalid currency");
+                }
+            }
+
+            if (!(validAmount && validCurrency)) {
+                clearLine();
+            }
+        } while (!(validAmount && validCurrency));
+
+        return new Amount(amount, currency);
+    }
+
+    // Other helper methods
     private void listCustomers() {
         System.out.println("CUSTOMERS:");
         System.out.println("ID   NAME");
@@ -185,38 +252,14 @@ public class Input {
     }
 
     private void listAccounts(Customer customer) {
-        System.out.println("ACCOUNTS FOR CUSTOMER " + customer.getName());
-        System.out.println("NO.   TYPE        BALANCE");
+        System.out.println("EXISTING ACCOUNTS FOR CUSTOMER " + customer.getName());
+        System.out.println("NO.     BALANCE");
         for (Account a : db.getAccounts(customer.getId())) {
-            System.out.printf("%-3d   %-9s   %s\n",
+            System.out.printf("%-3d     %s\n",
                     a.getRef().getAccountNumber(),
-                    a.getType(),
                     db.getAccountBalance(a.getRef())
             );
         }
-    }
-
-    private Amount getAmount() {
-        return getAmount("Amount");
-    }
-
-    private Amount getAmount(String name) {
-        double amount;
-        String currency;
-        boolean valid;
-
-        do {
-            System.out.print(name + " in " + getCurrencyList() + ": ");
-            amount = in.nextDouble();
-            currency = in.next();
-
-            valid = currencies.contains(currency);
-            if (!valid) {
-                System.out.println("Invalid currency");
-            }
-        } while (!valid);
-
-        return new Amount(amount, currency);
     }
 
     private String getCurrencyList() {

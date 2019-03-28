@@ -38,7 +38,6 @@ CREATE TABLE Accounts
 (
 	customer_id int,
 	account_no int,
-	type ENUM('checking', 'savings') NOT NULL,
 	currency char(3) NOT NULL,
 	initial_balance decimal(10, 2) NOT NULL,
 	PRIMARY KEY (customer_id, account_no),

@@ -5,21 +5,15 @@ import java.util.Objects;
 public class Account {
 
     private Reference ref;
-    private Type type;
     private Amount initialBalance;
 
-    public Account(int customerId, int accountNumber, Type type, Amount initialBalance) {
+    public Account(int customerId, int accountNumber, Amount initialBalance) {
         this.ref = new Reference(customerId, accountNumber);
-        this.type = type;
         this.initialBalance = initialBalance;
     }
 
     public Reference getRef() {
         return ref;
-    }
-
-    public Type getType() {
-        return type;
     }
 
     public Amount getInitialBalance() {
@@ -65,36 +59,6 @@ public class Account {
         @Override
         public int hashCode() {
             return Objects.hash(customerId, accountNumber);
-        }
-    }
-
-
-    public enum Type {
-
-        SAVINGS,
-        CHECKING;
-
-        public static Type fromString(String type) {
-            switch (type) {
-                case "savings":
-                    return SAVINGS;
-                case "checking":
-                    return CHECKING;
-                default:
-                    return null;
-            }
-        }
-
-        @Override
-        public String toString() {
-            switch(this) {
-                case SAVINGS:
-                    return "Savings";
-                case CHECKING:
-                    return "Checking";
-                default:
-                    return "Unknown";
-            }
         }
     }
 }

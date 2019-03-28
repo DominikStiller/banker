@@ -36,41 +36,37 @@ public class Banker {
 
         Input.MenuItem choice = null;
         do {
-            try {
-                choice = input.getMenuChoice();
+            choice = input.getMenuChoice();
 
-                switch (choice) {
-                    case LIST_CUSTOMERS:
-                        System.out.println("LIST CUSTOMERS:");
-                        listCustomers();
-                        break;
-                    case CREATE_CUSTOMER:
-                        System.out.println("CREATE NEW CUSTOMER:");
-                        createCustomer();
-                        break;
-                    case LIST_ACCOUNTS:
-                        System.out.println("LIST ACCOUNTS:");
-                        listAccounts();
-                        break;
-                    case CREATE_ACCOUNT:
-                        System.out.println("CREATE NEW ACCOUNT:");
-                        createAccount();
-                        break;
-                    case SHOW_BANK_STATEMENT:
-                        System.out.println("BANK STATEMENT:");
-                        showBankStatement();
-                        break;
-                    case MAKE_TRANSFER:
-                        System.out.println("MAKE WIRE TRANSFER:");
-                        makeTransfer();
-                        break;
-                    case EXIT:
-                        System.out.println("Goodbye from Banker!");
-                }
-            } catch (InputMismatchException e) {
-                System.out.println("Wrong input format");
-                input.clearLine();
+            switch (choice) {
+                case LIST_CUSTOMERS:
+                    System.out.println("LIST CUSTOMERS:");
+                    listCustomers();
+                    break;
+                case CREATE_CUSTOMER:
+                    System.out.println("CREATE NEW CUSTOMER:");
+                    createCustomer();
+                    break;
+                case LIST_ACCOUNTS:
+                    System.out.println("LIST ACCOUNTS:");
+                    listAccounts();
+                    break;
+                case CREATE_ACCOUNT:
+                    System.out.println("CREATE NEW ACCOUNT:");
+                    createAccount();
+                    break;
+                case SHOW_BANK_STATEMENT:
+                    System.out.println("BANK STATEMENT:");
+                    showBankStatement();
+                    break;
+                case MAKE_TRANSFER:
+                    System.out.println("MAKE WIRE TRANSFER:");
+                    makeTransfer();
+                    break;
+                case EXIT:
+                    System.out.println("Goodbye from Banker!");
             }
+
             System.out.println("\n\n");
             printSeparator('#');
         } while(choice != Input.MenuItem.EXIT);
@@ -81,7 +77,9 @@ public class Banker {
         System.out.println();
         System.out.println("ID   NAME                     NO. OF ACCOUNTS     EMAIL                              PHONE             ADDRESS");
         printSeparator();
-        for (Customer c : db.getCustomers()) {
+
+        var customers = db.getCustomers();
+        for (Customer c : customers) {
             System.out.printf(
                     "%-4d %-20s     %-15d     %-30s     %-13s     %s\n",
                     c.getId(),
@@ -92,14 +90,16 @@ public class Banker {
                     c.getAddress()
             );
         }
+
+        System.out.println();
+        System.out.println(customers.size() + " customers found");
     }
 
     private void createCustomer() {
         var customer = input.getNewCustomer();
+        var success = db.createCustomer(customer);
 
         System.out.println();
-
-        var success = db.createCustomer(customer);
         if (success) {
             System.out.println("Successfully created customer " + customer.getName());
         } else {
@@ -109,37 +109,32 @@ public class Banker {
 
     private void listAccounts() {
         var id = input.getCustomerId();
-        if (id == 0) {
-            return;
-        }
-
         var customer = db.getCustomer(id);
 
         System.out.println("ACCOUNTS FOR CUSTOMER " + customer.getName() + " (ID " + customer.getId() + ")\n");
         printSeparator();
-        System.out.println("ACCOUNT NO.     TYPE           INITIAL BALANCE      CURRENT BALANCE");
+        System.out.println("ACCOUNT NO.      INITIAL BALANCE      CURRENT BALANCE");
         printSeparator();
-        for (Account a : db.getAccounts(id)) {
+
+        var accounts = db.getAccounts(id);
+        for (Account a : accounts) {
             System.out.printf(
-                    "%-11s     %-10s     %-15s      %-15s\n",
+                    "%-11s      %-15s      %-15s\n",
                     a.getRef(),
-                    a.getType(),
                     a.getInitialBalance(),
                     db.getAccountBalance(a.getRef())
             );
         }
+
+        System.out.println();
+        System.out.println(accounts.size() + " accounts found");
     }
 
     private void createAccount() {
         var account = input.getNewAccount();
-
-        if (account == null) {
-            return;
-        }
+        var success = db.createAccount(account);
 
         System.out.println();
-
-        var success = db.createAccount(account);
         if (success) {
             System.out.println("Successfully created account " + account.getRef());
         } else {
@@ -148,26 +143,14 @@ public class Banker {
     }
 
     private void showBankStatement() {
-        var ref = input.getAccountRef();
-
-        if (ref == null) {
-            return;
-        }
-        System.out.println();
-
-        var account = db.getAccount(ref);
-
-        if (account == null) {
-            System.out.println("Account not found");
-            return;
-        }
-
-        var initialBalance = account.getInitialBalance();
+        var ref = input.getExistingAccountRef();
+        var initialBalance = db.getAccount(ref).getInitialBalance();
         var totalBalance = db.getAccountBalance(ref);
 
-        System.out.println("TRANSFERS FOR ACCOUNT " + account.getRef());
+        System.out.println();
+        System.out.println("TRANSFERS FOR ACCOUNT " + ref);
         printSeparator();
-        System.out.println("DATE     TIME       AMOUNT             SENDER                           RECEIVER                           REFERENCE");
+        System.out.println("DATE     TIME      AMOUNT              SENDER                           RECEIVER                           REFERENCE");
         printSeparator();
         for (Transfer t : db.getTransfers(ref)) {
             System.out.printf(
@@ -188,7 +171,7 @@ public class Banker {
                 initialBalance.toAbsolute().getAmount(),
                 initialBalance.getCurrency());
         printSeparator();
-        System.out.printf("TOTAL BALANCE:     %s %9.2f %s\n\n",
+        System.out.printf("TOTAL BALANCE:     %s %9.2f %s\n",
                 totalBalance.getAmount() >= 0 ? "+" : "-",
                 totalBalance.toAbsolute().getAmount(),
                 totalBalance.getCurrency());
@@ -196,20 +179,13 @@ public class Banker {
 
     private void makeTransfer() {
         var transfer = input.getNewTransfer();
-
-        if (transfer == null) {
-            return;
-        }
-
         transfer.setExecutionDate(LocalDateTime.now());
-
-        System.out.println();
-
         var senderAccountBalance = db.getAccountBalance(transfer.getSender());
         var senderAccountBalanceInTransferCurrency =
                 db.convertCurrency(senderAccountBalance, transfer.getAmount().getCurrency());
 
         // Check if sender has enough funds
+        System.out.println();
         if (senderAccountBalanceInTransferCurrency.getAmount() < transfer.getAmount().getAmount()) {
             System.out.println("Sender account does not have sufficient funds.");
             System.out.println("Sender account balance: " + senderAccountBalance);

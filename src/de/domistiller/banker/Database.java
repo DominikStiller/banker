@@ -39,6 +39,7 @@ public class Database implements Closeable {
 
     public Database(String server, String user, String password) {
         try {
+            log.info("trying to establish database connection");
             conn = DriverManager.getConnection(
                     "jdbc:mysql://" + server + "/banker?user=" + user + "&password=" + password);
             log.info("database connection established");
@@ -109,8 +110,8 @@ public class Database implements Closeable {
                         "AND account_no = ?"
         );
         createAccount = conn.prepareStatement(
-                "INSERT INTO accounts (customer_id, account_no, type, currency, initial_balance) \n" +
-                "VALUES (?, ?, ?, ?, ?)");
+                "INSERT INTO accounts (customer_id, account_no, currency, initial_balance) \n" +
+                "VALUES (?, ?, ?, ?)");
 
         getTransfers = conn.prepareStatement(
                 "SELECT transfers.id,\n" +
@@ -228,8 +229,7 @@ public class Database implements Closeable {
         return new Account(
                 rs.getInt(1),
                 rs.getInt(2),
-                Account.Type.fromString(rs.getString(3)),
-                new Amount(rs.getDouble(5), rs.getString(4)));
+                new Amount(rs.getDouble(4), rs.getString(3)));
     }
 
     Amount getAccountBalance(Account.Reference ref) {
@@ -260,9 +260,8 @@ public class Database implements Closeable {
         try {
             createAccount.setInt(1, a.getRef().getCustomerId());
             createAccount.setInt(2, a.getRef().getAccountNumber());
-            createAccount.setString(3, a.getType().name().toLowerCase());
-            createAccount.setString(4, a.getInitialBalance().getCurrency());
-            createAccount.setDouble(5, a.getInitialBalance().getAmount());
+            createAccount.setString(3, a.getInitialBalance().getCurrency());
+            createAccount.setDouble(4, a.getInitialBalance().getAmount());
 
             var result = createAccount.executeUpdate();
             return result == 1;
