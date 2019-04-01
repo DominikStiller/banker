@@ -17,6 +17,10 @@ public class Amount {
         return currency;
     }
 
+    public char getSign() {
+        return amount >= 0 ? '+' : '-';
+    }
+
     public Amount toAbsolute() {
         return new Amount(Math.abs(amount), currency);
     }

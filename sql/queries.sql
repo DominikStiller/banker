@@ -1,3 +1,7 @@
+-- -----------------------------------------------------------------------------------
+-- Some of the more complicated queries which are used in the Java application
+-- -----------------------------------------------------------------------------------
+
 -- Get all customers
 SELECT id, name, address, email, phone, COUNT(account_no)
 FROM customers
@@ -20,10 +24,12 @@ GROUP BY id, name, address, email, phone;
 
 -- Get account balance
 -- balance = initial_balance + incoming - outgoing
--- All transfers are converted to the account currency with the
---    most recent rate at the time of the transfer
--- Test result for account 4-1:
--- 18900.32 CAD + 2.57 EUR (3.87 CAD) - 1500.00 EUR (2260.73 CAD) - 1281.34 CAD = 15362.12 CAD
+-- All transfers are converted to the account's currency
+--
+-- Test result with initial data:
+--    - Account 4-1:
+--      18900.32 CAD + 2.57 EUR (3.87 CAD) + 7000 EUR (10550.05 CAD)
+--      - 1500.00 EUR (2260.73 CAD) - 1281.34 CAD = 25912.17 CAD
 SELECT initial_balance
    -- Incoming
 + (SELECT IFNULL(SUM(x.amount * x.rate), 0)

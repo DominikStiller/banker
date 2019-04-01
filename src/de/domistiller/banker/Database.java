@@ -37,16 +37,18 @@ public class Database implements Closeable {
     private PreparedStatement getCurrencies;
     private PreparedStatement convertCurrency;
 
-    public Database(String server, String user, String password) {
+    public Database(String server, String user, String password, String database) {
         try {
             log.info("trying to establish database connection");
             conn = DriverManager.getConnection(
-                    "jdbc:mysql://" + server + "/banker?user=" + user + "&password=" + password);
+                    "jdbc:mysql://" + server + "/" + database
+                            + "?user=" + user + "&password=" + password);
             log.info("database connection established");
         } catch (SQLException e) {
-            log.log(Level.SEVERE, "connection error", e);
+            log.log(Level.SEVERE, "error establishing database connection", e);
             System.exit(-1);
         }
+
         try {
             initializeStatements();
         } catch (SQLException e) {
@@ -75,43 +77,43 @@ public class Database implements Closeable {
 
         getAccount = conn.prepareStatement(
                 "SELECT *\n" +
-                "FROM accounts\n" +
-                "WHERE customer_id = ?\n" +
-                "AND account_no = ?");
+                    "FROM accounts\n" +
+                    "WHERE customer_id = ?\n" +
+                    "AND account_no = ?");
         getAccounts = conn.prepareStatement("SELECT * FROM accounts WHERE customer_id = ?");
         getAccountBalance = conn.prepareStatement(
-                    "SELECT initial_balance\n" +
-                        "+ (SELECT IFNULL(SUM(x.amount * x.rate), 0)\n" +
-                        "   FROM (SELECT t.amount, (SELECT rate\n" +
-                        "                           FROM exchangerates\n" +
-                        "                           WHERE from_currency = t.currency\n" +
-                        "                           AND to_currency = (SELECT currency\n" +
-                        "                                                FROM accounts\n" +
-                        "                                                WHERE customer_id = ?\n" +
-                        "                                                AND account_no = ?)\n" +
-                        "                           ) as rate\n" +
-                        "         FROM transfers t\n" +
-                        "         WHERE receiver_id = ?\n" +
-                        "         AND receiver_account = ?) as x)\n" +
-                        "- (SELECT IFNULL(SUM(x.amount * x.rate), 0)\n" +
-                        "   FROM (SELECT t.amount, (SELECT rate\n" +
-                        "                           FROM exchangerates\n" +
-                        "                           WHERE from_currency = t.currency\n" +
-                        "                           AND to_currency = (SELECT currency\n" +
-                        "                                                FROM accounts\n" +
-                        "                                                WHERE customer_id = ?\n" +
-                        "                                                AND account_no = ?)\n" +
-                        "                           ) as rate\n" +
-                        "         FROM transfers t\n" +
-                        "         WHERE sender_id = ?\n" +
-                        "         AND sender_account = ?) as x) as balance, currency\n" +
-                        "FROM accounts\n" +
-                        "WHERE customer_id = ?\n" +
-                        "AND account_no = ?"
+                "SELECT initial_balance\n" +
+                    "+ (SELECT IFNULL(SUM(x.amount * x.rate), 0)\n" +
+                    "   FROM (SELECT t.amount, (SELECT rate\n" +
+                    "                           FROM exchangerates\n" +
+                    "                           WHERE from_currency = t.currency\n" +
+                    "                           AND to_currency = (SELECT currency\n" +
+                    "                                                FROM accounts\n" +
+                    "                                                WHERE customer_id = ?\n" +
+                    "                                                AND account_no = ?)\n" +
+                    "                           ) as rate\n" +
+                    "         FROM transfers t\n" +
+                    "         WHERE receiver_id = ?\n" +
+                    "         AND receiver_account = ?) as x)\n" +
+                    "- (SELECT IFNULL(SUM(x.amount * x.rate), 0)\n" +
+                    "   FROM (SELECT t.amount, (SELECT rate\n" +
+                    "                           FROM exchangerates\n" +
+                    "                           WHERE from_currency = t.currency\n" +
+                    "                           AND to_currency = (SELECT currency\n" +
+                    "                                                FROM accounts\n" +
+                    "                                                WHERE customer_id = ?\n" +
+                    "                                                AND account_no = ?)\n" +
+                    "                           ) as rate\n" +
+                    "         FROM transfers t\n" +
+                    "         WHERE sender_id = ?\n" +
+                    "         AND sender_account = ?) as x) as balance, currency\n" +
+                    "FROM accounts\n" +
+                    "WHERE customer_id = ?\n" +
+                    "AND account_no = ?"
         );
         createAccount = conn.prepareStatement(
                 "INSERT INTO accounts (customer_id, account_no, currency, initial_balance) \n" +
-                "VALUES (?, ?, ?, ?)");
+                    "VALUES (?, ?, ?, ?)");
 
         getTransfers = conn.prepareStatement(
                 "SELECT transfers.id,\n" +
@@ -126,7 +128,8 @@ public class Database implements Closeable {
                     "ORDER BY execution_date ASC;"
         );
         makeTransfer = conn.prepareStatement(
-                "INSERT INTO transfers(sender_id, sender_account, receiver_id, receiver_account, amount, currency, execution_date, reference)\n" +
+                "INSERT INTO transfers(sender_id, sender_account, receiver_id, receiver_account,\n" +
+                        "                  amount, currency, execution_date, reference)\n" +
                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
         );
 
@@ -141,6 +144,8 @@ public class Database implements Closeable {
         );
     }
 
+
+    // CUSTOMERS
     Customer getCustomer(int id) {
         try {
             getCustomer.setInt(1, id);
@@ -193,6 +198,8 @@ public class Database implements Closeable {
         }
     }
 
+
+    // ACCOUNTS
     Account getAccount(Account.Reference ref) {
         try {
             getAccount.setInt(1, ref.getCustomerId());
@@ -271,6 +278,8 @@ public class Database implements Closeable {
         }
     }
 
+
+    // TRANSFERS
     List<Transfer> getTransfers(Account.Reference ref) {
         var list = new ArrayList<Transfer>();
         try {
@@ -281,22 +290,25 @@ public class Database implements Closeable {
 
             try (var rs = getTransfers.executeQuery()) {
                 while(rs.next()) {
-                    list.add(new Transfer(
-                            rs.getInt(1),
-                            new Account.Reference(rs.getInt(2), rs.getInt(3)),
-                            rs.getString(4),
-                            new Account.Reference(rs.getInt(5), rs.getInt(6)),
-                            rs.getString(7),
-                            new Amount(rs.getDouble(8), rs.getString(9)),
-                            rs.getTimestamp(10).toLocalDateTime(),
-                            rs.getString(11)
-                    ));
+                    list.add(transferFromResultSet(rs));
                 }
             }
         } catch (SQLException e) {
             log.log(Level.SEVERE, "error fetching transfers", e);
         }
         return list;
+    }
+
+    private Transfer transferFromResultSet(ResultSet rs) throws SQLException {
+        return new Transfer(
+                rs.getInt(1),
+                new Account.Reference(rs.getInt(2), rs.getInt(3)),
+                rs.getString(4),
+                new Account.Reference(rs.getInt(5), rs.getInt(6)),
+                rs.getString(7),
+                new Amount(rs.getDouble(8), rs.getString(9)),
+                rs.getTimestamp(10).toLocalDateTime(),
+                rs.getString(11));
     }
 
     boolean makeTransfer(Transfer t) {
@@ -318,6 +330,8 @@ public class Database implements Closeable {
         }
     }
 
+
+    // CURRENCIES
     List<String> getCurrencies() {
         var list = new ArrayList<String>();
         try (var rs = getCurrencies.executeQuery()) {
@@ -369,7 +383,7 @@ public class Database implements Closeable {
 
             log.info("prepared statements and database connection closed");
         } catch (SQLException e) {
-            log.log(Level.SEVERE, "error when closing connection", e);
+            log.log(Level.SEVERE, "error when closing prepared statements and database connection", e);
         }
     }
 }

@@ -8,24 +8,25 @@ import de.domistiller.banker.model.Transfer;
 import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
+import java.util.function.Predicate;
 
 /**
  * Handles all input
  */
 public class Input {
 
-    public enum MenuItem {
+    public enum MenuChoice {
         EXIT("Exit"),
         LIST_CUSTOMERS("List customers"),
-        CREATE_CUSTOMER("Create customer"),
         LIST_ACCOUNTS("List accounts of customer"),
+        CREATE_CUSTOMER("Create customer"),
         CREATE_ACCOUNT("Create account"),
         SHOW_BANK_STATEMENT("Show bank statement"),
         MAKE_TRANSFER("Make wire transfer");
 
         private String description;
 
-        MenuItem(String description) {
+        MenuChoice(String description) {
             this.description = description;
         }
     }
@@ -43,7 +44,7 @@ public class Input {
         currencies = db.getCurrencies();
     }
 
-    MenuItem getMenuChoice() {
+    MenuChoice getMenuChoice() {
         int choice;
         boolean valid;
 
@@ -52,9 +53,9 @@ public class Input {
             System.out.println();
             System.out.println("MENU:");
 
-            // Print menu in two columns
-            for (int i = 1; i < MenuItem.values().length; i++) {
-                System.out.printf("%d. %-28s", i, MenuItem.values()[i].description);
+            // Print all menu choices in two columns
+            for (int i = 1; i < MenuChoice.values().length; i++) {
+                System.out.printf("%d. %-28s", i, MenuChoice.values()[i].description);
                 if (i % 2 == 0) {
                     System.out.println();
                 }
@@ -64,28 +65,31 @@ public class Input {
 
             choice = getIntInput("Choice");
 
-            valid = choice >= 0 && choice < MenuItem.values().length;;
+            valid = choice >= 0 && choice < MenuChoice.values().length;;
             if (!valid) {
                 System.out.println("Invalid menu choice");
             }
         } while(!valid);
+
         System.out.println();
         System.out.println();
 
-        return MenuItem.values()[choice];
+        return MenuChoice.values()[choice];
     }
 
+
+    // CUSTOMERS
     Customer getNewCustomer() {
         clearLine();
 
-        var c = new Customer(getStringInputWithSpaces("Name"));
-        c.setAddress(getStringInputWithSpaces("Address"));
-        c.setEmail(getStringInput("Email"));
-        c.setPhone(getStringInput("Phone"));
+        var customer = new Customer(getStringInputWithSpaces("Name"));
+        customer.setAddress(getStringInputWithSpaces("Address"));
+        customer.setEmail(getStringInput("Email"));
+        customer.setPhone(getStringInput("Phone"));
 
         System.out.println();
 
-        return c;
+        return customer;
     }
 
     int getCustomerId() {
@@ -108,22 +112,37 @@ public class Input {
         return id;
     }
 
+
+    // ACCOUNTS
     Account getNewAccount() {
-        var ref = getNonExistingAccountRef();
+        var accountRef = getNonExistingAccountRef();
         var initialBalance = getAmount("Initial balance");
 
-        return new Account(ref.getCustomerId(), ref.getAccountNumber(), initialBalance);
+        return new Account(accountRef.getCustomerId(), accountRef.getAccountNumber(), initialBalance);
     }
 
     Account.Reference getExistingAccountRef() {
-        return getAccountRef(true);
+        return getAccountRef((ref) -> {
+            if (db.getAccount(ref) == null) {
+                System.out.println("Account not found");
+                return false;
+            }
+            return true;
+        });
     }
 
     Account.Reference getNonExistingAccountRef() {
-        return getAccountRef(false);
+        return getAccountRef((ref) -> {
+            if (db.getAccount(ref) != null) {
+                System.out.println("Account already exists");
+                return false;
+            }
+            return true;
+        });
     }
 
-    private Account.Reference getAccountRef(boolean existingOrNew) {
+    private Account.Reference getAccountRef(Predicate<Account.Reference> validator) {
+        // Account reference concists of customer id and account number
         var customerId = getCustomerId();
         var customer = db.getCustomer(customerId);
 
@@ -131,32 +150,19 @@ public class Input {
         listAccounts(customer);
         System.out.println();
 
-        int accountNo;
-        Account.Reference ref;
-        boolean valid = false;
+        Account.Reference accountRef;
+        boolean valid;
 
         do {
-            accountNo = getIntInput(existingOrNew ? "Account Number" : "New Account Number");
-            ref = new Account.Reference(customerId, accountNo);
-
-            if (existingOrNew) {
-                if (db.getAccount(ref) != null) {
-                    valid = true;
-                } else {
-                    System.out.println("Account not found");
-                }
-            } else {
-                if (db.getAccount(ref) == null) {
-                    valid = true;
-                } else {
-                    System.out.println("Account already exists");
-                }
-            }
+            accountRef = new Account.Reference(customerId, getIntInput("Account Number"));
+            valid = validator.test(accountRef);
         } while (!valid);
 
-        return ref;
+        return accountRef;
     }
 
+
+    // TRANSFERS
     Transfer getNewTransfer() {
         System.out.println("Sender:");
         var sender = getExistingAccountRef();
@@ -165,7 +171,7 @@ public class Input {
         System.out.println("Receiver:");
         var receiver = getExistingAccountRef();
 
-        var amount = getAmount();
+        var amount = getAmount("Amount");
 
         clearLine();
         var reference = getStringInputWithSpaces("Reference");
@@ -173,13 +179,15 @@ public class Input {
         return new Transfer(sender, receiver, amount, reference);
     }
 
-    // Input helper methods including validation
+
+    // Input helper methods for various types, including validation
     private int getIntInput(String prompt) {
         int input = 0;
         boolean valid = false;
 
         do {
             System.out.print(prompt + ": ");
+
             try {
                 input = in.nextInt();
                 valid = true;
@@ -204,10 +212,6 @@ public class Input {
         return in.nextLine();
     }
 
-    private Amount getAmount() {
-        return getAmount("Amount");
-    }
-
     private Amount getAmount(String name) {
         double amount = 0;
         String currency = "";
@@ -224,6 +228,7 @@ public class Input {
                 validCurrency = true;
             } catch (InputMismatchException ignore) {}
 
+            // TODO Simplify validation
             validAmount = validAmount && amount > 0;
             if (!validAmount) {
                 System.out.println("Invalid amount, must be positive number");

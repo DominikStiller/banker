@@ -18,6 +18,7 @@ public class Transfer {
         this.receiver = receiver;
         this.amount = amount;
         this.reference = reference;
+        executionDate = LocalDateTime.now();
     }
 
     public Transfer(int id, Account.Reference sender, Account.Reference receiver, Amount amount, LocalDateTime executionDate, String reference) {

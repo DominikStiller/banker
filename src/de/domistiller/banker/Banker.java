@@ -4,8 +4,6 @@ import de.domistiller.banker.model.Account;
 import de.domistiller.banker.model.Customer;
 import de.domistiller.banker.model.Transfer;
 
-import java.time.LocalDateTime;
-import java.util.InputMismatchException;
 import java.util.Properties;
 import java.util.logging.Logger;
 
@@ -27,14 +25,17 @@ public class Banker {
         db = new Database(
                 settings.getProperty("dbserver"),
                 settings.getProperty("dbuser"),
-                settings.getProperty("dbpassword"));
+                settings.getProperty("dbpassword"),
+                settings.getProperty("dbname"));
         input = new Input(db);
     }
 
     public void start() {
         System.out.println("Welcome to Banker!");
 
-        Input.MenuItem choice = null;
+        Input.MenuChoice choice;
+
+        // Main loop
         do {
             choice = input.getMenuChoice();
 
@@ -69,7 +70,8 @@ public class Banker {
 
             System.out.println("\n\n");
             printSeparator('#');
-        } while(choice != Input.MenuItem.EXIT);
+        } while(choice != Input.MenuChoice.EXIT);
+
         db.close();
     }
 
@@ -108,15 +110,15 @@ public class Banker {
     }
 
     private void listAccounts() {
-        var id = input.getCustomerId();
-        var customer = db.getCustomer(id);
+        var customerId = input.getCustomerId();
+        var customer = db.getCustomer(customerId);
 
         System.out.println("ACCOUNTS FOR CUSTOMER " + customer.getName() + " (ID " + customer.getId() + ")\n");
         printSeparator();
         System.out.println("ACCOUNT NO.      INITIAL BALANCE      CURRENT BALANCE");
         printSeparator();
 
-        var accounts = db.getAccounts(id);
+        var accounts = db.getAccounts(customerId);
         for (Account a : accounts) {
             System.out.printf(
                     "%-11s      %-15s      %-15s\n",
@@ -135,6 +137,7 @@ public class Banker {
         var success = db.createAccount(account);
 
         System.out.println();
+
         if (success) {
             System.out.println("Successfully created account " + account.getRef());
         } else {
@@ -143,21 +146,22 @@ public class Banker {
     }
 
     private void showBankStatement() {
-        var ref = input.getExistingAccountRef();
-        var initialBalance = db.getAccount(ref).getInitialBalance();
-        var totalBalance = db.getAccountBalance(ref);
+        var accountRef = input.getExistingAccountRef();
+        var initialBalance = db.getAccount(accountRef).getInitialBalance();
+        var totalBalance = db.getAccountBalance(accountRef);
 
         System.out.println();
-        System.out.println("TRANSFERS FOR ACCOUNT " + ref);
+        System.out.println("TRANSFERS FOR ACCOUNT " + accountRef);
         printSeparator();
         System.out.println("DATE     TIME      AMOUNT              SENDER                           RECEIVER                           REFERENCE");
         printSeparator();
-        for (Transfer t : db.getTransfers(ref)) {
+
+        for (Transfer t : db.getTransfers(accountRef)) {
             System.out.printf(
                     "%tD %tR     %c %9.2f %s     %-30s   %-30s     %-100s\n",
                     t.getExecutionDate(),
                     t.getExecutionDate(),
-                    t.getSignFor(ref),
+                    t.getSignFor(accountRef),
                     t.getAmount().getAmount(),
                     t.getAmount().getCurrency(),
                     t.getSenderName() + " (" + t.getSender() + ")",
@@ -165,27 +169,30 @@ public class Banker {
                     t.getReference()
             );
         }
+
         printSeparator();
         System.out.printf("INITIAL BALANCE:   %s %9.2f %s\n",
-                initialBalance.getAmount() >= 0 ? "+" : "-",
+                initialBalance.getSign(),
                 initialBalance.toAbsolute().getAmount(),
                 initialBalance.getCurrency());
+
         printSeparator();
         System.out.printf("TOTAL BALANCE:     %s %9.2f %s\n",
-                totalBalance.getAmount() >= 0 ? "+" : "-",
+                totalBalance.getSign(),
                 totalBalance.toAbsolute().getAmount(),
                 totalBalance.getCurrency());
     }
 
     private void makeTransfer() {
         var transfer = input.getNewTransfer();
-        transfer.setExecutionDate(LocalDateTime.now());
+
         var senderAccountBalance = db.getAccountBalance(transfer.getSender());
         var senderAccountBalanceInTransferCurrency =
                 db.convertCurrency(senderAccountBalance, transfer.getAmount().getCurrency());
 
-        // Check if sender has enough funds
         System.out.println();
+
+        // Only allow transfer if sender's account balance is sufficient
         if (senderAccountBalanceInTransferCurrency.getAmount() < transfer.getAmount().getAmount()) {
             System.out.println("Sender account does not have sufficient funds.");
             System.out.println("Sender account balance: " + senderAccountBalance);

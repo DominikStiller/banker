@@ -15,10 +15,12 @@ public class Main {
 
     public static void main(String[] args) {
         var settings = new Properties();
-        // Try to read settings from file in cwd, then in jar
+
+        // Try to read settings from file in current directory
         try {
             settings.load(new FileInputStream("banker.properties"));
         } catch (FileNotFoundException e1) {
+            // Try to read settings from file from jar
             try {
                 settings.load(new BufferedReader(
                         new InputStreamReader(Banker.class.getResourceAsStream("/banker.properties"))));
@@ -34,6 +36,7 @@ public class Main {
             System.exit(-1);
         }
 
+        // Set log level based on config
         if(settings.getProperty("debug").equals("true")) {
             log.setLevel(Level.INFO);
         } else {
