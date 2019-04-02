@@ -2,6 +2,9 @@ package de.domistiller.banker.model;
 
 import java.util.Objects;
 
+/**
+ * Represents a bank account
+ */
 public class Account {
 
     private Reference ref;

@@ -2,6 +2,9 @@ package de.domistiller.banker.model;
 
 import java.util.Optional;
 
+/**
+ * Represents a customer
+ */
 public class Customer {
 
     private int id;

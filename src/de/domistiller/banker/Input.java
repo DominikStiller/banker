@@ -215,34 +215,35 @@ public class Input {
     private Amount getAmount(String name) {
         double amount = 0;
         String currency = "";
+
+        boolean valid;
         boolean validAmount = false;
         boolean validCurrency = false;
 
         do {
-            System.out.print(name + " in " + getCurrencyList() + ": ");
+            System.out.print(name + " in " + String.join("/", currencies) + ": ");
 
             try {
                 amount = in.nextDouble();
                 currency = in.next();
-                validAmount = true;
-                validCurrency = true;
+
+                // Amount must be positive
+                validAmount = amount > 0;
+                // Currency must exist in database
+                validCurrency = currencies.contains(currency);
             } catch (InputMismatchException ignore) {}
 
-            // TODO Simplify validation
-            validAmount = validAmount && amount > 0;
             if (!validAmount) {
                 System.out.println("Invalid amount, must be positive number");
-            } else {
-                validCurrency = validCurrency && currencies.contains(currency);
-                if (!validCurrency) {
-                    System.out.println("Invalid currency");
-                }
+            } else if (!validCurrency) {
+                System.out.println("Invalid currency");
             }
 
-            if (!(validAmount && validCurrency)) {
+            valid = validAmount && validCurrency;
+            if (!valid) {
                 clearLine();
             }
-        } while (!(validAmount && validCurrency));
+        } while (!valid);
 
         return new Amount(amount, currency);
     }
@@ -267,11 +268,7 @@ public class Input {
         }
     }
 
-    private String getCurrencyList() {
-        return String.join("/", currencies);
-    }
-
-    void clearLine() {
+    private void clearLine() {
         in.nextLine();
     }
 }

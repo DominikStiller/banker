@@ -1,6 +1,10 @@
 package de.domistiller.banker.model;
 
+/**
+ * Represents a money amount in a currency
+ */
 public class Amount {
+
     private double amount;
     private String currency;
 

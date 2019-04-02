@@ -2,7 +2,7 @@
 -- Some of the more complicated queries which are used in the Java application
 -- -----------------------------------------------------------------------------------
 
--- Get all customers
+-- Get all customers and numbers of associated accounts
 SELECT id, name, address, email, phone, COUNT(account_no)
 FROM customers
 LEFT JOIN accounts ON customers.id = accounts.customer_id
@@ -12,7 +12,7 @@ GROUP BY id, name, address, email, phone;
 -- -----------------------------------------------------------------------------------
 
 
--- Get customer
+-- Get customer and number of associated accounts
 SELECT id, name, address, email, phone, COUNT(account_no)
 FROM customers
 LEFT JOIN accounts ON customers.id = accounts.customer_id

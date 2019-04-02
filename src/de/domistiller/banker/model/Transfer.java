@@ -2,6 +2,9 @@ package de.domistiller.banker.model;
 
 import java.time.LocalDateTime;
 
+/**
+ * Represents a wire transfer
+ */
 public class Transfer {
 
     private int id;
@@ -77,6 +80,10 @@ public class Transfer {
         return reference;
     }
 
+    /**
+     * Check if the transfer adds or withdraws money from the account, based on it being the sender or receiver
+     * @return The sign of the transfer for the given account, either '+' or '-'
+     */
     public char getSignFor(Account.Reference account) {
         if (account.equals(this.sender)) {
             return '-';
@@ -85,17 +92,5 @@ public class Transfer {
         } else {
             throw new IllegalArgumentException("Account must either be sender or receiver");
         }
-    }
-
-    @Override
-    public String toString() {
-        return "Transfer{" +
-                "id=" + id +
-                ", sender=" + sender +
-                ", receiver=" + receiver +
-                ", amount=" + amount +
-                ", executionDate=" + executionDate +
-                ", reference='" + reference + '\'' +
-                '}';
     }
 }
