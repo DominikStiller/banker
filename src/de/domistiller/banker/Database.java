@@ -241,16 +241,16 @@ public class Database implements Closeable {
 
     Amount getAccountBalance(Account.Reference ref) {
         try {
-            getAccountBalance.setInt(1 , ref.getCustomerId());
-            getAccountBalance.setInt(2 , ref.getAccountNumber());
-            getAccountBalance.setInt(3 , ref.getCustomerId());
-            getAccountBalance.setInt(4 , ref.getAccountNumber());
-            getAccountBalance.setInt(5 , ref.getCustomerId());
-            getAccountBalance.setInt(6 , ref.getAccountNumber());
-            getAccountBalance.setInt(7 , ref.getCustomerId());
-            getAccountBalance.setInt(8 , ref.getAccountNumber());
-            getAccountBalance.setInt(9 , ref.getCustomerId());
-            getAccountBalance.setInt(10 , ref.getAccountNumber());
+            getAccountBalance.setInt(1, ref.getCustomerId());
+            getAccountBalance.setInt(2, ref.getAccountNumber());
+            getAccountBalance.setInt(3, ref.getCustomerId());
+            getAccountBalance.setInt(4, ref.getAccountNumber());
+            getAccountBalance.setInt(5, ref.getCustomerId());
+            getAccountBalance.setInt(6, ref.getAccountNumber());
+            getAccountBalance.setInt(7, ref.getCustomerId());
+            getAccountBalance.setInt(8, ref.getAccountNumber());
+            getAccountBalance.setInt(9, ref.getCustomerId());
+            getAccountBalance.setInt(10, ref.getAccountNumber());
 
             try (var rs = getAccountBalance.executeQuery()) {
                 if (rs.next()) {

@@ -142,7 +142,7 @@ public class Input {
     }
 
     private Account.Reference getAccountRef(Predicate<Account.Reference> validator) {
-        // Account reference concists of customer id and account number
+        // Account reference consists of customer id and account number
         var customerId = getCustomerId();
         var customer = db.getCustomer(customerId);
 
