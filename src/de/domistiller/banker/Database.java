@@ -44,7 +44,7 @@ public class Database implements Closeable {
                     "jdbc:mysql://" + server + "/" + database
                             + "?user=" + user + "&password=" + password);
             log.info("database connection established");
-        } catch (Exception e) {
+        } catch (SQLException e) {
             log.log(Level.SEVERE, "error establishing database connection", e);
             System.exit(-1);
         }
