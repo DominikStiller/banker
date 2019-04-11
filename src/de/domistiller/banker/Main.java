@@ -14,7 +14,7 @@ public class Main {
     private final static Logger log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
     public static void main(String[] args) {
-        var settings = new Properties();
+        Properties settings = new Properties();
 
         // Try to read settings from file in current directory
         try {
@@ -22,7 +22,7 @@ public class Main {
         } catch (FileNotFoundException e1) {
             // Try to read settings from file from jar
             try {
-                var file = Banker.class.getResourceAsStream("/banker.properties");
+                InputStream file = Banker.class.getResourceAsStream("/banker.properties");
                 if (file == null) {
                     System.out.println("Config file \"banker.properties\" not found");
                     System.exit(-1);

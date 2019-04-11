@@ -44,7 +44,7 @@ public class Database implements Closeable {
                     "jdbc:mysql://" + server + "/" + database
                             + "?user=" + user + "&password=" + password);
             log.info("database connection established");
-        } catch (SQLException e) {
+        } catch (Exception e) {
             log.log(Level.SEVERE, "error establishing database connection", e);
             System.exit(-1);
         }
@@ -150,7 +150,7 @@ public class Database implements Closeable {
         try {
             getCustomer.setInt(1, id);
 
-            try (var rs = getCustomer.executeQuery()) {
+            try (ResultSet rs = getCustomer.executeQuery()) {
                 if(rs.next()) {
                     return customerFromResultSet(rs);
                 }
@@ -162,8 +162,8 @@ public class Database implements Closeable {
     }
 
     List<Customer> getCustomers() {
-        var list = new ArrayList<Customer>();
-        try (var rs = getCustomers.executeQuery()) {
+        List list = new ArrayList<Customer>();
+        try (ResultSet rs = getCustomers.executeQuery()) {
             while(rs.next()) {
                 list.add(customerFromResultSet(rs));
             }
@@ -190,7 +190,7 @@ public class Database implements Closeable {
             createCustomer.setString(3, c.getEmail());
             createCustomer.setString(4, c.getPhone());
 
-            var result = createCustomer.executeUpdate();
+            int result = createCustomer.executeUpdate();
             return result == 1;
         } catch (SQLException e) {
             log.log(Level.SEVERE, "error creating customer", e);
@@ -205,7 +205,7 @@ public class Database implements Closeable {
             getAccount.setInt(1, ref.getCustomerId());
             getAccount.setInt(2, ref.getAccountNumber());
 
-            try (var rs = getAccount.executeQuery()) {
+            try (ResultSet rs = getAccount.executeQuery()) {
                 if (rs.next()) {
                     return accountFromResultSet(rs);
                 }
@@ -217,11 +217,11 @@ public class Database implements Closeable {
     }
 
     List<Account> getAccounts(int customerId) {
-        var list = new ArrayList<Account>();
+        List list = new ArrayList<Account>();
         try {
             getAccounts.setInt(1, customerId);
 
-            try (var rs = getAccounts.executeQuery()) {
+            try (ResultSet rs = getAccounts.executeQuery()) {
                 while(rs.next()) {
                     list.add(accountFromResultSet(rs));
                 }
@@ -252,7 +252,7 @@ public class Database implements Closeable {
             getAccountBalance.setInt(9, ref.getCustomerId());
             getAccountBalance.setInt(10, ref.getAccountNumber());
 
-            try (var rs = getAccountBalance.executeQuery()) {
+            try (ResultSet rs = getAccountBalance.executeQuery()) {
                 if (rs.next()) {
                     return new Amount(rs.getDouble(1), rs.getString(2));
                 }
@@ -270,7 +270,7 @@ public class Database implements Closeable {
             createAccount.setString(3, a.getInitialBalance().getCurrency());
             createAccount.setDouble(4, a.getInitialBalance().getAmount());
 
-            var result = createAccount.executeUpdate();
+            int result = createAccount.executeUpdate();
             return result == 1;
         } catch (SQLException e) {
             log.log(Level.SEVERE, "error creating account", e);
@@ -281,14 +281,14 @@ public class Database implements Closeable {
 
     // TRANSFERS
     List<Transfer> getTransfers(Account.Reference ref) {
-        var list = new ArrayList<Transfer>();
+        List list = new ArrayList<Transfer>();
         try {
             getTransfers.setInt(1, ref.getCustomerId());
             getTransfers.setInt(2, ref.getAccountNumber());
             getTransfers.setInt(3, ref.getCustomerId());
             getTransfers.setInt(4, ref.getAccountNumber());
 
-            try (var rs = getTransfers.executeQuery()) {
+            try (ResultSet rs = getTransfers.executeQuery()) {
                 while(rs.next()) {
                     list.add(transferFromResultSet(rs));
                 }
@@ -322,7 +322,7 @@ public class Database implements Closeable {
             makeTransfer.setObject(7, t.getExecutionDate());
             makeTransfer.setString(8, t.getReference());
 
-            var result = makeTransfer.executeUpdate();
+            int result = makeTransfer.executeUpdate();
             return result == 1;
         } catch (SQLException e) {
             log.log(Level.SEVERE, "error making transfer", e);
@@ -333,8 +333,8 @@ public class Database implements Closeable {
 
     // CURRENCIES
     List<String> getCurrencies() {
-        var list = new ArrayList<String>();
-        try (var rs = getCurrencies.executeQuery()) {
+        List list = new ArrayList<String>();
+        try (ResultSet rs = getCurrencies.executeQuery()) {
             while(rs.next()) {
                 list.add(rs.getString(1));
             }
@@ -350,7 +350,7 @@ public class Database implements Closeable {
             convertCurrency.setString(2, from.getCurrency());
             convertCurrency.setString(3, toCurrency);
 
-            try (var rs = convertCurrency.executeQuery()) {
+            try (ResultSet rs = convertCurrency.executeQuery()) {
                 if (rs.next()) {
                     return new Amount(rs.getDouble(1), toCurrency);
                 }

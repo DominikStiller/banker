@@ -82,7 +82,7 @@ public class Input {
     Customer getNewCustomer() {
         clearLine();
 
-        var customer = new Customer(getStringInputWithSpaces("Name"));
+        Customer customer = new Customer(getStringInputWithSpaces("Name"));
         customer.setAddress(getStringInputWithSpaces("Address"));
         customer.setEmail(getStringInput("Email"));
         customer.setPhone(getStringInput("Phone"));
@@ -115,8 +115,8 @@ public class Input {
 
     // ACCOUNTS
     Account getNewAccount() {
-        var accountRef = getNonExistingAccountRef();
-        var initialBalance = getAmount("Initial balance");
+        Account.Reference accountRef = getNonExistingAccountRef();
+        Amount initialBalance = getAmount("Initial balance");
 
         return new Account(accountRef.getCustomerId(), accountRef.getAccountNumber(), initialBalance);
     }
@@ -143,8 +143,8 @@ public class Input {
 
     private Account.Reference getAccountRef(Predicate<Account.Reference> validator) {
         // Account reference consists of customer id and account number
-        var customerId = getCustomerId();
-        var customer = db.getCustomer(customerId);
+        int customerId = getCustomerId();
+        Customer customer = db.getCustomer(customerId);
 
         System.out.println();
         listAccounts(customer);
@@ -166,16 +166,16 @@ public class Input {
     Transfer getNewTransfer() {
         System.out.println();
         System.out.println("SENDER ACCOUNT:");
-        var sender = getExistingAccountRef();
+        Account.Reference sender = getExistingAccountRef();
 
         System.out.println();
         System.out.println("RECEIVER ACCOUNT:");
-        var receiver = getExistingAccountRef();
+        Account.Reference receiver = getExistingAccountRef();
 
-        var amount = getAmount("Amount");
+        Amount amount = getAmount("Amount");
 
         clearLine();
-        var reference = getStringInputWithSpaces("Reference");
+        String reference = getStringInputWithSpaces("Reference");
 
         return new Transfer(sender, receiver, amount, reference);
     }

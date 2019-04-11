@@ -1,9 +1,11 @@
 package de.domistiller.banker;
 
 import de.domistiller.banker.model.Account;
+import de.domistiller.banker.model.Amount;
 import de.domistiller.banker.model.Customer;
 import de.domistiller.banker.model.Transfer;
 
+import java.util.List;
 import java.util.Properties;
 import java.util.logging.Logger;
 
@@ -80,7 +82,7 @@ public class Banker {
         System.out.println("ID   NAME                     NO. OF ACCOUNTS     EMAIL                              PHONE             ADDRESS");
         printSeparator();
 
-        var customers = db.getCustomers();
+        List<Customer> customers = db.getCustomers();
         for (Customer c : customers) {
             System.out.printf(
                     "%-4d %-20s     %-15d     %-30s     %-13s     %s\n",
@@ -98,8 +100,8 @@ public class Banker {
     }
 
     private void createCustomer() {
-        var customer = input.getNewCustomer();
-        var success = db.createCustomer(customer);
+        Customer customer = input.getNewCustomer();
+        boolean success = db.createCustomer(customer);
 
         System.out.println();
         if (success) {
@@ -110,8 +112,8 @@ public class Banker {
     }
 
     private void listAccounts() {
-        var customerId = input.getCustomerId();
-        var customer = db.getCustomer(customerId);
+        int customerId = input.getCustomerId();
+        Customer customer = db.getCustomer(customerId);
 
         System.out.println();
         System.out.println("ACCOUNTS FOR CUSTOMER " + customer.getName() + " (ID " + customer.getId() + ")\n");
@@ -119,7 +121,7 @@ public class Banker {
         System.out.println("ACCOUNT NO.      INITIAL BALANCE      CURRENT BALANCE");
         printSeparator();
 
-        var accounts = db.getAccounts(customerId);
+        List<Account> accounts = db.getAccounts(customerId);
         for (Account a : accounts) {
             System.out.printf(
                     "%-11s      %-15s      %-15s\n",
@@ -134,8 +136,8 @@ public class Banker {
     }
 
     private void createAccount() {
-        var account = input.getNewAccount();
-        var success = db.createAccount(account);
+        Account account = input.getNewAccount();
+        boolean success = db.createAccount(account);
 
         System.out.println();
 
@@ -147,9 +149,9 @@ public class Banker {
     }
 
     private void showBankStatement() {
-        var accountRef = input.getExistingAccountRef();
-        var initialBalance = db.getAccount(accountRef).getInitialBalance();
-        var totalBalance = db.getAccountBalance(accountRef);
+        Account.Reference accountRef = input.getExistingAccountRef();
+        Amount initialBalance = db.getAccount(accountRef).getInitialBalance();
+        Amount totalBalance = db.getAccountBalance(accountRef);
 
         System.out.println();
         System.out.println("TRANSFERS FOR ACCOUNT " + accountRef);
@@ -185,10 +187,10 @@ public class Banker {
     }
 
     private void makeTransfer() {
-        var transfer = input.getNewTransfer();
+        Transfer transfer = input.getNewTransfer();
 
-        var senderAccountBalance = db.getAccountBalance(transfer.getSender());
-        var senderAccountBalanceInTransferCurrency =
+        Amount senderAccountBalance = db.getAccountBalance(transfer.getSender());
+        Amount senderAccountBalanceInTransferCurrency =
                 db.convertCurrency(senderAccountBalance, transfer.getAmount().getCurrency());
 
         System.out.println();
@@ -202,7 +204,7 @@ public class Banker {
             return;
         }
 
-        var success = db.makeTransfer(transfer);
+        boolean success = db.makeTransfer(transfer);
         if (success) {
             System.out.println("Successfully made wire transfer");
             System.out.println();
@@ -225,7 +227,7 @@ public class Banker {
     }
 
     private void printSeparator(char character) {
-        var s = new StringBuilder();
+        StringBuilder s = new StringBuilder();
         for (int i = 0; i < 150; i++) {
             s.append(character);
         }
