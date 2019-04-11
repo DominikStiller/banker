@@ -113,6 +113,7 @@ public class Banker {
         var customerId = input.getCustomerId();
         var customer = db.getCustomer(customerId);
 
+        System.out.println();
         System.out.println("ACCOUNTS FOR CUSTOMER " + customer.getName() + " (ID " + customer.getId() + ")\n");
         printSeparator();
         System.out.println("ACCOUNT NO.      INITIAL BALANCE      CURRENT BALANCE");

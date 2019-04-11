@@ -164,11 +164,12 @@ public class Input {
 
     // TRANSFERS
     Transfer getNewTransfer() {
-        System.out.println("Sender:");
+        System.out.println();
+        System.out.println("SENDER ACCOUNT:");
         var sender = getExistingAccountRef();
 
         System.out.println();
-        System.out.println("Receiver:");
+        System.out.println("RECEIVER ACCOUNT:");
         var receiver = getExistingAccountRef();
 
         var amount = getAmount("Amount");
