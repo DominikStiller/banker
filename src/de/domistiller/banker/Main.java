@@ -22,11 +22,13 @@ public class Main {
         } catch (FileNotFoundException e1) {
             // Try to read settings from file from jar
             try {
-                settings.load(new BufferedReader(
-                        new InputStreamReader(Banker.class.getResourceAsStream("/banker.properties"))));
-            } catch (FileNotFoundException e2) {
-                System.out.println("Config file \"banker.properties\" not found");
-                System.exit(-1);
+                var file = Banker.class.getResourceAsStream("/banker.properties");
+                if (file == null) {
+                    System.out.println("Config file \"banker.properties\" not found");
+                    System.exit(-1);
+                }
+
+                settings.load(new BufferedReader(new InputStreamReader(file)));
             } catch (IOException e) {
                 log.log(Level.SEVERE, "error reading config", e);
                 System.exit(-1);
