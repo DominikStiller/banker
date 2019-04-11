@@ -87,3 +87,4 @@ fabric.properties
 hs_err_pid*
 
 banker.properties
+!lib/mysql-connector-java-8.0.15.jar
