@@ -12,7 +12,7 @@ VALUES ('CAD', 'Canadian Dollar'),
        ('EUR', 'Euro');
 
 -- from_rate * from_amount = to_amount
-INSERT INTO exchangerates(from_currency, to_currency, rate)
+INSERT INTO exchangerates (from_currency, to_currency, rate)
 VALUES ('CAD', 'CAD', 1.0),
        ('USD', 'USD', 1.0),
        ('EUR', 'EUR', 1.0),
