@@ -1,7 +1,3 @@
-/**
- * Launch code which starts actual program
- */
-
 package de.domistiller.banker;
 
 import java.io.*;
@@ -9,6 +5,9 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Launch code which starts actual program
+ */
 public class Main {
 
     private final static Logger log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);

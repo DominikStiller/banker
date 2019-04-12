@@ -162,7 +162,7 @@ public class Database implements Closeable {
     }
 
     List<Customer> getCustomers() {
-        List list = new ArrayList<Customer>();
+        List<Customer> list = new ArrayList<>();
         try (ResultSet rs = getCustomers.executeQuery()) {
             while(rs.next()) {
                 list.add(customerFromResultSet(rs));
@@ -217,7 +217,7 @@ public class Database implements Closeable {
     }
 
     List<Account> getAccounts(int customerId) {
-        List list = new ArrayList<Account>();
+        List<Account> list = new ArrayList<>();
         try {
             getAccounts.setInt(1, customerId);
 
@@ -281,7 +281,7 @@ public class Database implements Closeable {
 
     // TRANSFERS
     List<Transfer> getTransfers(Account.Reference ref) {
-        List list = new ArrayList<Transfer>();
+        List<Transfer> list = new ArrayList<>();
         try {
             getTransfers.setInt(1, ref.getCustomerId());
             getTransfers.setInt(2, ref.getAccountNumber());
@@ -333,7 +333,7 @@ public class Database implements Closeable {
 
     // CURRENCIES
     List<String> getCurrencies() {
-        List list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         try (ResultSet rs = getCurrencies.executeQuery()) {
             while(rs.next()) {
                 list.add(rs.getString(1));
